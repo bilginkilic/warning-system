@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Integrity System Technical Documentation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #3498db;
+        }
+        .code {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        ul, ol {
+            padding-left: 20px;
+        }
+        .key-points {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .mermaid {
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+</head>
+<body>
+    <h1>Data Integrity System Technical Documentation</h1>
+
+    <h2>System Overview</h2>
+    <p>The Data Integrity System is designed to compare and verify the integrity of files between their original uploaded version and their received version. This verification ensures that file contents remain unchanged and complete throughout the transmission process.</p>
+
+    <h2>Technical Infrastructure</h2>
+    <ul>
+        <li><strong>Platform</strong>: Windows Service running on .NET Framework 4.7.2</li>
+        <li><strong>Database</strong>: SQL Server 2018</li>
+        <li><strong>Main Parameter Table</strong>: <code>FLX_INTEGRITYCHECKPARAMETER</code></li>
+        <li><strong>File Storage Paths</strong>:
+            <ul>
+                <li>Original files: Defined in <code>FILEORIGINALPATH</code></li>
+                <li>Received files: Defined in <code>FILERECEIVEDPATH</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>File Processing Architecture</h2>
+    <p>The system implements separate adapters for different file types, ensuring specialized handling for each format. To prevent system locks and ensure efficient processing, the system:</p>
+    <ol>
+        <li>Creates temporary copies of both original and received files</li>
+        <li>Performs comparisons on these temporary copies</li>
+        <li>Maintains system stability and prevents file locks on production files</li>
+    </ol>
+
+    <h2>Supported File Types and Comparison Logic</h2>
+
+    <h3>1. Internal_ALL.csv</h3>
+    <div class="key-points">
+        <p><strong>Comparison Fields</strong>:</p>
+        <ul>
+            <li>SDN Name</li>
+            <li>Address</li>
+            <li>City</li>
+            <li>Country</li>
+            <li>Program</li>
+            <li>Type</li>
+        </ul>
+        <p><strong>Process</strong>: Row-by-row comparison based on ID matching</p>
+    </div>
+
+    <h3>2. TKYMOF.csv</h3>
+    <div class="key-points">
+        <p><strong>Comparison Fields</strong>:</p>
+        <ul>
+            <li>SDN Name</li>
+            <li>Address</li>
+            <li>City</li>
+            <li>Country</li>
+            <li>Program</li>
+            <li>Info1</li>
+            <li>Info2</li>
+            <li>Info3</li>
+            <li>Remark</li>
+            <li>Type</li>
+        </ul>
+        <p><strong>Process</strong>: Row-by-row comparison based on ID matching</p>
+    </div>
+
+    <h3>3. eulist.xml</h3>
+    <div class="key-points">
+        <p><strong>Comparison Fields</strong>:</p>
+        <ul>
+            <li>Entity</li>
+            <li>NameAlias</li>
+            <li>Birthdate</li>
+            <li>Citizenship</li>
+        </ul>
+        <p><strong>Process</strong>: Node traversal and comparison based on Logical ID</p>
+    </div>
+
+    <h3>4. sdn.xml</h3>
+    <div class="key-points">
+        <p><strong>Comparison Fields</strong>:</p>
+        <ul>
+            <li>sdnListPublishInformation</li>
+            <li>Entity</li>
+            <li>sdnEntity</li>
+            <li>ProgramList</li>
+            <li>AkasList</li>
+            <li>Address</li>
+            <li>Citizenship</li>
+            <li>nationalityList</li>
+        </ul>
+        <p><strong>Process</strong>: Node traversal and comparison based on Logical ID</p>
+    </div>
+
+    <h2>Reporting and Logging</h2>
+
+    <h3>Discrepancy Reporting</h3>
+    <p>When differences are detected, the system automatically generates and sends an email to the Compliance team containing:</p>
+    <ul>
+        <li>File upload timestamp</li>
+        <li>Specific node location of the difference</li>
+        <li>Comprehensive display of differing values</li>
+    </ul>
+
+    <h3>Success Logging</h3>
+    <p>When comparisons complete successfully with no differences:</p>
+    <ul>
+        <li>A SUCCESS record is created</li>
+        <li>The record is stored in the <code>FLX_INTEGRITYCHECK</code> table</li>
+    </ul>
+
+    <h2>System Flow Diagram</h2>
+    <div class="mermaid">
+        graph TD
+            A[File Upload] --> B[Create Temporary Copies]
+            B --> C{File Type Check}
+            C -->|CSV| D[Row-by-Row Comparison]
+            C -->|XML| E[Node-Based Comparison]
+            D --> F{Differences Found?}
+            E --> F
+            F -->|Yes| G[Send Email Alert]
+            F -->|No| H[Log Success in FLX_INTEGRITYCHECK]
+    </div>
+
+    <h2>Key Benefits</h2>
+    <div class="key-points">
+        <ol>
+            <li><strong>Data Security</strong>: Ensures data integrity between original and received files</li>
+            <li><strong>System Stability</strong>: Temporary file processing prevents system locks</li>
+            <li><strong>Comprehensive Monitoring</strong>: Detailed reporting of any discrepancies</li>
+            <li><strong>Audit Trail</strong>: Maintains success logs for all comparisons</li>
+            <li><strong>Specialized Processing</strong>: Custom adapters for different file formats</li>
+        </ol>
+    </div>
+
+    <p>This system plays a crucial role in maintaining data integrity and ensuring that all file transfers are completed accurately and completely, with appropriate notifications and logging mechanisms in place for monitoring and auditing purposes.</p>
+</body>
+</html> 
