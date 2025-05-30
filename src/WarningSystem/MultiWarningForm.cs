@@ -86,6 +86,7 @@ namespace WarningSystem
                 btnOk.Click += (s, e) =>
                 {
                     Result.Result = DialogResult.OK;
+                    this.DialogResult = DialogResult.OK;
                     this.Close();
                 };
 
@@ -96,7 +97,7 @@ namespace WarningSystem
             }
             else
             {
-                // İki buton - sağ tarafta yan yana
+                // İki buton - ortada yan yana
                 var totalWidth = (2 * BUTTON_WIDTH) + PADDING;
                 var startX = (buttonPanel.ClientSize.Width - totalWidth) / 2;
 
@@ -109,7 +110,8 @@ namespace WarningSystem
                     BackColor = Color.FromArgb(0, 120, 215),
                     ForeColor = Color.White,
                     Font = new Font("Segoe UI", 10, FontStyle.Regular),
-                    Cursor = Cursors.Hand
+                    Cursor = Cursors.Hand,
+                    Anchor = AnchorStyles.None
                 };
 
                 btnCancel = new Button
@@ -121,7 +123,8 @@ namespace WarningSystem
                     BackColor = Color.FromArgb(200, 200, 200),
                     ForeColor = Color.Black,
                     Font = new Font("Segoe UI", 10, FontStyle.Regular),
-                    Cursor = Cursors.Hand
+                    Cursor = Cursors.Hand,
+                    Anchor = AnchorStyles.None
                 };
 
                 btnContinue.MouseEnter += (s, e) => btnContinue.BackColor = Color.FromArgb(0, 100, 190);
@@ -134,6 +137,7 @@ namespace WarningSystem
                 {
                     Result.IsConfirmed = true;
                     Result.Result = DialogResult.Yes;
+                    this.DialogResult = DialogResult.Yes;
                     this.Close();
                 };
 
@@ -141,6 +145,7 @@ namespace WarningSystem
                 {
                     Result.IsConfirmed = false;
                     Result.Result = DialogResult.No;
+                    this.DialogResult = DialogResult.No;
                     this.Close();
                 };
 
