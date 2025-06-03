@@ -39,12 +39,13 @@ namespace PDFSystem2
         private Label lblAciklama;
         private TextBox txtAciklama;
         
-        // PDF Upload - Gizmox için düzeltildi
+        // PDF Upload - Gizmox OpenFileDialog kullanarak
         private GroupBox grpPdfUpload;
         private Button btnPdfYukle;
         private Label lblPdfDurum;
         private PictureBox picPdfPreview;
-        private FileUpload fileUploadPdf;  // Gizmox FileUpload kontrolü
+        private OpenFileDialog openFileDialog;  // Gizmox OpenFileDialog kontrolü
+        private string selectedFilePath = "";   // Seçilen dosya yolu
         
         // Yetkili Bilgileri
         private GroupBox grpYetkiliBilgileri;
@@ -224,39 +225,48 @@ namespace PDFSystem2
                 lblAciklama, txtAciklama
             });
 
-            // PDF Upload GroupBox - Gizmox için düzeltildi
+            // PDF Upload GroupBox - Gizmox OpenFileDialog kullanarak
             grpPdfUpload = new GroupBox();
             grpPdfUpload.Text = "PDF Yükleme ve İmza Seçimi";
             grpPdfUpload.Location = new Point(520, 10);
             grpPdfUpload.Size = new Size(640, 320);
             
-            // Gizmox FileUpload kontrolü
-            fileUploadPdf = new FileUpload();
-            fileUploadPdf.Location = new Point(10, 25);
-            fileUploadPdf.Size = new Size(300, 25);
-            fileUploadPdf.Filter = "PDF Files|*.pdf";
-            fileUploadPdf.MaxFileSize = 10485760; // 10MB limit
+            // OpenFileDialog oluştur
+            openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "PDF Dosyaları (*.pdf)|*.pdf|Tüm Dosyalar (*.*)|*.*";
+            openFileDialog.Title = "PDF Dosyası Seç";
+            openFileDialog.Multiselect = false;
             
             btnPdfYukle = new Button();
-            btnPdfYukle.Text = "PDF Yükle";
-            btnPdfYukle.Location = new Point(320, 25);
-            btnPdfYukle.Size = new Size(100, 25);
+            btnPdfYukle.Text = "PDF Dosyası Seç";
+            btnPdfYukle.Location = new Point(10, 25);
+            btnPdfYukle.Size = new Size(150, 30);
+            btnPdfYukle.BackColor = Color.LightBlue;
             
             lblPdfDurum = new Label();
             lblPdfDurum.Text = "PDF dosyası seçilmedi.";
-            lblPdfDurum.Location = new Point(10, 60);
+            lblPdfDurum.Location = new Point(10, 65);
             lblPdfDurum.Size = new Size(620, 20);
             lblPdfDurum.ForeColor = Color.Blue;
             
             picPdfPreview = new PictureBox();
-            picPdfPreview.Location = new Point(10, 90);
-            picPdfPreview.Size = new Size(620, 220);
+            picPdfPreview.Location = new Point(10, 95);
+            picPdfPreview.Size = new Size(620, 215);
             picPdfPreview.BackColor = Color.LightGray;
             picPdfPreview.BorderStyle = BorderStyle.FixedSingle;
             
+            // Preview alanına bilgi etiketi ekle
+            Label lblPreviewInfo = new Label();
+            lblPreviewInfo.Text = "PDF ÖNIZLEME ALANI\n(Seçilen PDF dosyası burada görüntülenecek)";
+            lblPreviewInfo.Location = new Point(200, 90);
+            lblPreviewInfo.Size = new Size(300, 40);
+            lblPreviewInfo.TextAlign = ContentAlignment.MiddleCenter;
+            lblPreviewInfo.ForeColor = Color.Gray;
+            picPdfPreview.Controls.Add(lblPreviewInfo);
+            
             grpPdfUpload.Controls.AddRange(new Control[]
             {
-                fileUploadPdf, btnPdfYukle, lblPdfDurum, picPdfPreview
+                btnPdfYukle, lblPdfDurum, picPdfPreview
             });
 
             // Yetkili Bilgileri GroupBox
@@ -337,7 +347,6 @@ namespace PDFSystem2
         private void SetupEventHandlers()
         {
             btnPdfYukle.Click += BtnPdfYukle_Click;
-            fileUploadPdf.FileUploaded += FileUploadPdf_FileUploaded;
             btnKaydet.Click += BtnKaydet_Click;
             btnYeni.Click += BtnYeni_Click;
             btnSil.Click += BtnSil_Click;
@@ -350,38 +359,77 @@ namespace PDFSystem2
 
         private void BtnPdfYukle_Click(object sender, EventArgs e)
         {
-            // Gizmox FileUpload için dosya seçimi başlat
-            if (!string.IsNullOrEmpty(fileUploadPdf.FileName))
-            {
-                fileUploadPdf.Upload();
-            }
-            else
-            {
-                MessageBox.Show("Lütfen önce bir PDF dosyası seçin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-        }
-
-        private void FileUploadPdf_FileUploaded(object sender, FileUploadedEventArgs e)
-        {
             try
             {
-                lblPdfDurum.Text = string.Format("Yüklenen PDF: {0} ({1:N0} bytes)", 
-                    e.File.FileName, e.File.ContentLength);
-                lblPdfDurum.ForeColor = Color.Green;
-                
-                // PDF başarıyla yüklendi
-                MessageBox.Show("PDF başarıyla yüklendi! İmza koordinatlarını seçebilirsiniz.", 
-                    "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                
-                // Burada PDF'i parse edip preview'da gösterebiliriz
-                // Şimdilik sadece yükleme başarılı mesajı
+                // Gizmox OpenFileDialog kullan
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    selectedFilePath = openFileDialog.FileName;
+                    string fileName = System.IO.Path.GetFileName(selectedFilePath);
+                    
+                    // PDF dosyası kontrolü
+                    if (!fileName.ToLower().EndsWith(".pdf"))
+                    {
+                        MessageBox.Show("Lütfen sadece PDF dosyası seçin.", 
+                            "Geçersiz Dosya Türü", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    
+                    // Dosya bilgilerini göster
+                    lblPdfDurum.Text = string.Format("Seçilen PDF: {0}", fileName);
+                    lblPdfDurum.ForeColor = Color.Green;
+                    
+                    // Başarı mesajı
+                    MessageBox.Show(string.Format("PDF dosyası başarıyla seçildi!\n\nDosya: {0}\n\nİmza koordinatlarını seçmek için PDF üzerine tıklayabilirsiniz.", fileName), 
+                        "Dosya Seçimi Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        
+                    // Preview alanını güncelle
+                    UpdatePdfPreview(fileName);
+                }
             }
             catch (Exception ex)
             {
-                lblPdfDurum.Text = "PDF yükleme hatası: " + ex.Message;
+                lblPdfDurum.Text = "Dosya seçiminde hata oluştu: " + ex.Message;
                 lblPdfDurum.ForeColor = Color.Red;
-                MessageBox.Show("PDF yüklenirken hata oluştu: " + ex.Message, 
+                MessageBox.Show("Dosya seçiminde hata oluştu: " + ex.Message, 
                     "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        
+        private void UpdatePdfPreview(string fileName)
+        {
+            // Preview alanını temizle ve güncelle
+            picPdfPreview.Controls.Clear();
+            
+            // PDF bilgi etiketi
+            Label lblPdfInfo = new Label();
+            lblPdfInfo.Text = string.Format("PDF YÜKLENDI: {0}\n\n(Gerçek uygulamada PDF içeriği burada görüntülenecek)\n\nİmza koordinatları seçmek için\nPDF sayfası üzerine tıklayın", fileName);
+            lblPdfInfo.Location = new Point(50, 60);
+            lblPdfInfo.Size = new Size(520, 100);
+            lblPdfInfo.TextAlign = ContentAlignment.MiddleCenter;
+            lblPdfInfo.ForeColor = Color.DarkBlue;
+            lblPdfInfo.Font = new Font(lblPdfInfo.Font.FontFamily, 10, FontStyle.Bold);
+            
+            // İmza koordinat simülasyonu için tıklama eventi
+            picPdfPreview.Click += PicPdfPreview_Click;
+            picPdfPreview.Cursor = Cursors.Hand;
+            
+            picPdfPreview.Controls.Add(lblPdfInfo);
+        }
+        
+        private void PicPdfPreview_Click(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(selectedFilePath))
+            {
+                MouseEventArgs mouseArgs = e as MouseEventArgs;
+                if (mouseArgs != null)
+                {
+                    int x = mouseArgs.X;
+                    int y = mouseArgs.Y;
+                    
+                    MessageBox.Show(string.Format("İmza koordinatı seçildi!\n\nX: {0}\nY: {1}\n\n(Bu koordinatlar veritabanında saklanacak)", x, y), 
+                        "İmza Koordinatı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
         }
 
@@ -555,8 +603,22 @@ namespace PDFSystem2
             txtNoterNo.Clear();
             txtKullanici.Clear();
             txtAciklama.Clear();
+            selectedFilePath = "";
             lblPdfDurum.Text = "PDF dosyası seçilmedi.";
             lblPdfDurum.ForeColor = Color.Blue;
+            
+            // Preview alanını temizle
+            picPdfPreview.Controls.Clear();
+            picPdfPreview.Click -= PicPdfPreview_Click;
+            picPdfPreview.Cursor = Cursors.Default;
+            
+            Label lblPreviewInfo = new Label();
+            lblPreviewInfo.Text = "PDF ÖNIZLEME ALANI\n(Seçilen PDF dosyası burada görüntülenecek)";
+            lblPreviewInfo.Location = new Point(200, 90);
+            lblPreviewInfo.Size = new Size(300, 40);
+            lblPreviewInfo.TextAlign = ContentAlignment.MiddleCenter;
+            lblPreviewInfo.ForeColor = Color.Gray;
+            picPdfPreview.Controls.Add(lblPreviewInfo);
         }
 
         #endregion
