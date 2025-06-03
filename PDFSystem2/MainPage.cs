@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using Gizmox.WebGUI.Forms;
 using Gizmox.WebGUI.Common;
+using PDFSystem2.DataLayer;
 
 namespace PDFSystem2
 {
@@ -12,6 +13,7 @@ namespace PDFSystem2
         #region Private Members
 
         private int _currentCircularId = 1;
+        private MockDataService _mockDataService;
 
         // Tab Control
         private TabControl tabMain;
@@ -67,6 +69,7 @@ namespace PDFSystem2
 
         public MainPage()
         {
+            _mockDataService = new MockDataService();
             InitializeComponent();
             InitializeForm();
             LoadSampleData();
@@ -423,6 +426,122 @@ namespace PDFSystem2
             txtKullanici.Text = "Test Kullanıcı";
             txtAciklama.Text = "UI Test için örnek açıklama";
             txtOzelDurumlar.Text = "Süre belirtilmemiş ve süresiz geçerli işlemler için test verisi";
+            
+            // DataGridView'lere örnek data yükle
+            LoadYetkililerData();
+            LoadIslemTurleriData();
+            LoadYetkiTurleriData();
+        }
+
+        private void LoadYetkililerData()
+        {
+            try
+            {
+                var circularDetails = _mockDataService.GetCircularDetails();
+                
+                // DataGridView sütunlarını oluştur
+                dgvYetkililer.Columns.Clear();
+                dgvYetkililer.Columns.Add("ID", "ID");
+                dgvYetkililer.Columns.Add("ADI_SOYADI", "ADI SOYADI");
+                dgvYetkililer.Columns.Add("YETKI_SEKLI", "YETKİ ŞEKLİ");
+                dgvYetkililer.Columns.Add("YETKI_SURE", "YETKİ SÜRESİ");
+                dgvYetkililer.Columns.Add("IMZA_YETKI_GRUBU", "İMZA YETKİ GRUBU");
+                dgvYetkililer.Columns.Add("YETKI_OLDUGU_ISLEMLER", "YETKİ OLDUĞU İŞLEMLER");
+                
+                // Gizle ID sütununu
+                dgvYetkililer.Columns["ID"].Visible = false;
+                
+                // Verileri yükle
+                dgvYetkililer.Rows.Clear();
+                foreach (var detail in circularDetails)
+                {
+                    dgvYetkililer.Rows.Add(
+                        detail.ID,
+                        detail.ADI_SOYADI,
+                        detail.YETKI_SEKLI,
+                        detail.YETKI_SURE,
+                        detail.IMZA_YETKI_GRUBU,
+                        detail.YETKI_OLDUGU_ISLEMLER
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Yetkili bilgileri yüklenirken hata: " + ex.Message, 
+                    "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void LoadIslemTurleriData()
+        {
+            try
+            {
+                var operations = _mockDataService.GetOperations();
+                
+                // DataGridView sütunlarını oluştur
+                dgvIslemTurleri.Columns.Clear();
+                dgvIslemTurleri.Columns.Add("ID", "ID");
+                dgvIslemTurleri.Columns.Add("OPERATION_CODE", "İŞLEM KODU");
+                dgvIslemTurleri.Columns.Add("OPERATION_TYPE", "İŞLEM TÜRÜ");
+                dgvIslemTurleri.Columns.Add("KAYIT_TARIHI", "KAYIT TARİHİ");
+                
+                // Gizle ID sütununu
+                dgvIslemTurleri.Columns["ID"].Visible = false;
+                
+                // Verileri yükle
+                dgvIslemTurleri.Rows.Clear();
+                foreach (var operation in operations)
+                {
+                    dgvIslemTurleri.Rows.Add(
+                        operation.ID,
+                        operation.OPERATION_CODE,
+                        operation.OPERATION_TYPE,
+                        operation.KAYIT_TARIHI.ToString("dd/MM/yyyy")
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("İşlem türleri yüklenirken hata: " + ex.Message, 
+                    "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void LoadYetkiTurleriData()
+        {
+            try
+            {
+                var roleTypes = _mockDataService.GetRoleTypes();
+                
+                // DataGridView sütunlarını oluştur
+                dgvYetkiTurleri.Columns.Clear();
+                dgvYetkiTurleri.Columns.Add("ID", "ID");
+                dgvYetkiTurleri.Columns.Add("ROLE_GROUP", "YETKİ GRUBU");
+                dgvYetkiTurleri.Columns.Add("ROLE_TYPE", "YETKİ TÜRÜ");
+                dgvYetkiTurleri.Columns.Add("MIN_SIGNATURE_COUNT", "MIN İMZA SAYISI");
+                dgvYetkiTurleri.Columns.Add("KAYIT_TARIHI", "KAYIT TARİHİ");
+                
+                // Gizle ID sütununu
+                dgvYetkiTurleri.Columns["ID"].Visible = false;
+                
+                // Verileri yükle
+                dgvYetkiTurleri.Rows.Clear();
+                foreach (var roleType in roleTypes)
+                {
+                    dgvYetkiTurleri.Rows.Add(
+                        roleType.ID,
+                        roleType.ROLE_GROUP,
+                        roleType.ROLE_TYPE,
+                        roleType.MIN_SIGNATURE_COUNT,
+                        roleType.KAYIT_TARIHI.ToString("dd/MM/yyyy")
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Yetki türleri yüklenirken hata: " + ex.Message, 
+                    "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void ClearForm()
@@ -437,6 +556,7 @@ namespace PDFSystem2
             txtKullanici.Clear();
             txtAciklama.Clear();
             lblPdfDurum.Text = "PDF dosyası seçilmedi.";
+            lblPdfDurum.ForeColor = Color.Blue;
         }
 
         #endregion
