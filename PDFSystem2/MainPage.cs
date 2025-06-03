@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using Gizmox.WebGUI.Forms;
 using Gizmox.WebGUI.Common;
 using PDFSystem2.DataLayer;
+using System.Linq;
 
 namespace PDFSystem2
 {
@@ -401,20 +402,39 @@ namespace PDFSystem2
             // Preview alanını temizle ve güncelle
             picPdfPreview.Controls.Clear();
             
-            // PDF bilgi etiketi
+            // Preview alanının arka plan rengini değiştir
+            picPdfPreview.BackColor = Color.White;
+            
+            // PDF bilgi etiketi - daha görünür şekilde
             Label lblPdfInfo = new Label();
-            lblPdfInfo.Text = string.Format("PDF YÜKLENDI: {0}\n\n(Gerçek uygulamada PDF içeriği burada görüntülenecek)\n\nİmza koordinatları seçmek için\nPDF sayfası üzerine tıklayın", fileName);
-            lblPdfInfo.Location = new Point(50, 60);
-            lblPdfInfo.Size = new Size(520, 100);
+            lblPdfInfo.Text = string.Format("✓ PDF YÜKLENDİ ✓\n\n{0}\n\n(Gerçek uygulamada PDF içeriği burada görüntülenecek)\n\n⬇ İmza koordinatları seçmek için buraya tıklayın ⬇", fileName);
+            lblPdfInfo.Location = new Point(10, 10);  // Sol üst köşeden başlat
+            lblPdfInfo.Size = new Size(600, 195);     // Tüm alanı kapla
             lblPdfInfo.TextAlign = ContentAlignment.MiddleCenter;
             lblPdfInfo.ForeColor = Color.DarkBlue;
-            lblPdfInfo.Font = new Font(lblPdfInfo.Font.FontFamily, 10, FontStyle.Bold);
+            lblPdfInfo.BackColor = Color.LightCyan;   // Arka plan rengi ekle
+            lblPdfInfo.BorderStyle = BorderStyle.FixedSingle;
+            lblPdfInfo.Font = new Font("Arial", 12, FontStyle.Bold);
             
             // İmza koordinat simülasyonu için tıklama eventi
             picPdfPreview.Click += PicPdfPreview_Click;
+            lblPdfInfo.Click += PicPdfPreview_Click;  // Label'a da tıklama eventi ekle
             picPdfPreview.Cursor = Cursors.Hand;
+            lblPdfInfo.Cursor = Cursors.Hand;
             
             picPdfPreview.Controls.Add(lblPdfInfo);
+            
+            // Ekstra bilgi için küçük bir label daha ekle
+            Label lblInstructionInfo = new Label();
+            lblInstructionInfo.Text = "PDF başarıyla yüklendi - Koordinat seçimi için tıklayın";
+            lblInstructionInfo.Location = new Point(170, 25);
+            lblInstructionInfo.Size = new Size(280, 15);
+            lblInstructionInfo.TextAlign = ContentAlignment.MiddleCenter;
+            lblInstructionInfo.ForeColor = Color.Green;
+            lblInstructionInfo.BackColor = Color.Transparent;
+            lblInstructionInfo.Font = new Font("Arial", 8, FontStyle.Regular);
+            
+            picPdfPreview.Controls.Add(lblInstructionInfo);
         }
         
         private void PicPdfPreview_Click(object sender, EventArgs e)
@@ -424,13 +444,48 @@ namespace PDFSystem2
                 MouseEventArgs mouseArgs = e as MouseEventArgs;
                 if (mouseArgs != null)
                 {
+                    // Koordinatları hesapla
                     int x = mouseArgs.X;
                     int y = mouseArgs.Y;
                     
-                    MessageBox.Show(string.Format("İmza koordinatı seçildi!\n\nX: {0}\nY: {1}\n\n(Bu koordinatlar veritabanında saklanacak)", x, y), 
-                        "İmza Koordinatı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    // Koordinat seçimi mesajı
+                    string message = string.Format("✓ İMZA KOORDİNATI SEÇİLDİ!\n\nDosya: {0}\n\nKoordinatlar:\nX: {1} piksel\nY: {2} piksel\n\n(Bu koordinatlar veritabanına kaydedilecek)\n\nBaşka bir nokta seçmek için tekrar tıklayabilirsiniz.", 
+                        System.IO.Path.GetFileName(selectedFilePath), x, y);
+                    
+                    MessageBox.Show(message, "İmza Koordinatı Seçildi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    
+                    // Seçilen koordinatı preview'da göster
+                    ShowSelectedCoordinate(x, y);
                 }
             }
+            else
+            {
+                MessageBox.Show("Önce bir PDF dosyası seçin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+        
+        private void ShowSelectedCoordinate(int x, int y)
+        {
+            // Önceki koordinat işaretini temizle
+            var existingMarkers = picPdfPreview.Controls.OfType<Label>().Where(l => l.Name == "coordinateMarker").ToList();
+            foreach (var marker in existingMarkers)
+            {
+                picPdfPreview.Controls.Remove(marker);
+            }
+            
+            // Yeni koordinat işareti ekle
+            Label coordinateMarker = new Label();
+            coordinateMarker.Name = "coordinateMarker";
+            coordinateMarker.Text = "✗";
+            coordinateMarker.Location = new Point(x - 5, y - 5);
+            coordinateMarker.Size = new Size(10, 10);
+            coordinateMarker.ForeColor = Color.Red;
+            coordinateMarker.BackColor = Color.Yellow;
+            coordinateMarker.Font = new Font("Arial", 8, FontStyle.Bold);
+            coordinateMarker.TextAlign = ContentAlignment.MiddleCenter;
+            
+            picPdfPreview.Controls.Add(coordinateMarker);
+            coordinateMarker.BringToFront();
         }
 
         private void BtnKaydet_Click(object sender, EventArgs e)
