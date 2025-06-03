@@ -4,15 +4,18 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using PDFSystem.Models;
+using System.Threading.Tasks;
 
 namespace PDFSystem.Services
 {
     public class CustomerService
     {
         private string connectionString;
+        private readonly bool _useMockData;
 
-        public CustomerService()
+        public CustomerService(bool useMockData = false)
         {
+            _useMockData = useMockData;
             // Connection string'i config'den okuyun
             connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["DefaultConnection"]?.ConnectionString 
                 ?? "Data Source=.;Initial Catalog=PDFSignatureSystem;Integrated Security=True";
@@ -204,6 +207,52 @@ namespace PDFSystem.Services
             }
 
             return customers;
+        }
+
+        public async Task<List<Customer>> GetCustomersAsync(string status = null)
+        {
+            if (_useMockData)
+            {
+                return MockDataService.GetCustomers(status);
+            }
+
+            // Gerçek veritabanı implementasyonu burada olacak
+            throw new NotImplementedException("Gerçek veritabanı bağlantısı henüz implement edilmedi.");
+        }
+
+        public async Task<Customer> GetCustomerByIdAsync(int customerId)
+        {
+            if (_useMockData)
+            {
+                return MockDataService.GetCustomerById(customerId);
+            }
+
+            // Gerçek veritabanı implementasyonu burada olacak
+            throw new NotImplementedException("Gerçek veritabanı bağlantısı henüz implement edilmedi.");
+        }
+
+        public async Task<bool> AddCustomerAsync(Customer customer)
+        {
+            if (_useMockData)
+            {
+                MockDataService.AddCustomer(customer);
+                return true;
+            }
+
+            // Gerçek veritabanı implementasyonu burada olacak
+            throw new NotImplementedException("Gerçek veritabanı bağlantısı henüz implement edilmedi.");
+        }
+
+        public async Task<bool> UpdateCustomerAsync(Customer customer)
+        {
+            if (_useMockData)
+            {
+                MockDataService.UpdateCustomer(customer);
+                return true;
+            }
+
+            // Gerçek veritabanı implementasyonu burada olacak
+            throw new NotImplementedException("Gerçek veritabanı bağlantısı henüz implement edilmedi.");
         }
     }
 } 
