@@ -80,11 +80,11 @@ namespace PDFSystem2.TestConsole
             };
 
             Console.WriteLine("🏢 FİRMA BİLGİLERİ:");
-            Console.WriteLine($"   Firma Unvanı: {circular.FIRMA_UNVANI}");
-            Console.WriteLine($"   Hesap No: {circular.FIRMA_HESAP_NUMARASI}");
-            Console.WriteLine($"   Düzenlenme Tarihi: {circular.IMZA_SIRKULERI_DUZENLEME_TARIHI:dd/MM/yyyy}");
-            Console.WriteLine($"   Geçerlilik Tarihi: {circular.IMZA_SIRKULERI_GECERLILIK_TARIHI:dd/MM/yyyy}");
-            Console.WriteLine($"   Noter Sırküler No: {circular.NOTER_IMZA_SIRKULERI_NO}");
+            Console.WriteLine(string.Format("   Firma Unvanı: {0}", circular.FIRMA_UNVANI));
+            Console.WriteLine(string.Format("   Hesap No: {0}", circular.FIRMA_HESAP_NUMARASI));
+            Console.WriteLine(string.Format("   Düzenlenme Tarihi: {0:dd/MM/yyyy}", circular.IMZA_SIRKULERI_DUZENLEME_TARIHI));
+            Console.WriteLine(string.Format("   Geçerlilik Tarihi: {0:dd/MM/yyyy}", circular.IMZA_SIRKULERI_GECERLILIK_TARIHI));
+            Console.WriteLine(string.Format("   Noter Sırküler No: {0}", circular.NOTER_IMZA_SIRKULERI_NO));
             Console.WriteLine();
 
             // Test Detail Data
@@ -133,10 +133,10 @@ namespace PDFSystem2.TestConsole
             Console.WriteLine("👥 YETKİLİ BİLGİLERİ:");
             foreach (var detail in details)
             {
-                Console.WriteLine($"   • {detail.ADI_SOYADI} ({detail.IMZA_YETKI_GRUBU} GRUBU)");
-                Console.WriteLine($"     Yetki Şekli: {detail.YETKI_SEKLI}");
-                Console.WriteLine($"     Yetki Süresi: {detail.YETKI_SURE}");
-                Console.WriteLine($"     Sınırlı Yetki: {(detail.SINIRLI_YETKI_VAR_MI ? "Var" : "Yok")}");
+                Console.WriteLine(string.Format("   • {0} ({1} GRUBU)", detail.ADI_SOYADI, detail.IMZA_YETKI_GRUBU));
+                Console.WriteLine(string.Format("     Yetki Şekli: {0}", detail.YETKI_SEKLI));
+                Console.WriteLine(string.Format("     Yetki Süresi: {0}", detail.YETKI_SURE));
+                Console.WriteLine(string.Format("     Sınırlı Yetki: {0}", (detail.SINIRLI_YETKI_VAR_MI ? "Var" : "Yok")));
                 Console.WriteLine();
             }
 
@@ -154,7 +154,7 @@ namespace PDFSystem2.TestConsole
             Console.WriteLine("📋 İŞLEM TÜRLERİ:");
             for (int i = 0; i < operations.Length; i++)
             {
-                Console.WriteLine($"   {i + 1}. {operations[i]}");
+                Console.WriteLine(string.Format("   {0}. {1}", i + 1, operations[i]));
             }
             Console.WriteLine();
 
@@ -173,9 +173,9 @@ namespace PDFSystem2.TestConsole
             };
 
             Console.WriteLine("🏆 YETKİ TÜRLERİ:");
-            foreach (var (group, type) in roleTypes)
+            foreach (var roleType in roleTypes)
             {
-                Console.WriteLine($"   • {group}: {type}");
+                Console.WriteLine(string.Format("   • {0}: {1}", roleType.Item1, roleType.Item2));
             }
             Console.WriteLine();
 
@@ -202,7 +202,7 @@ namespace PDFSystem2.TestConsole
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Hata: {ex.Message}");
+                Console.WriteLine(string.Format("❌ Hata: {0}", ex.Message));
             }
             
             Console.WriteLine("\nDevam etmek için bir tuşa basın...");

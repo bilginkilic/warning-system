@@ -3,8 +3,6 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
 using Gizmox.WebGUI.Forms;
-using PDFSystem2.DataLayer;
-using PDFSystem2.Models;
 
 namespace PDFSystem2
 {
@@ -12,7 +10,6 @@ namespace PDFSystem2
     {
         #region Private Members
 
-        private MockDataService _mockDataService;
         private int _currentCircularId = 1;
 
         // Tab Control
@@ -70,8 +67,7 @@ namespace PDFSystem2
         {
             InitializeComponent();
             InitializeForm();
-            _mockDataService = new MockDataService();
-            LoadMockData();
+            LoadSampleData();
         }
 
         #endregion
@@ -347,36 +343,29 @@ namespace PDFSystem2
             
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
-                lblPdfDurum.Text = $"Seçilen dosya: {openFileDialog.FileName}";
-                // PDF önizleme ve imza seçimi işlemleri burada implement edilecek
+                lblPdfDurum.Text = string.Format("Seçilen dosya: {0}", openFileDialog.FileName);
                 MessageBox.Show("PDF yüklendi. İmza alanlarını seçebilirsiniz.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
         private void BtnKaydet_Click(object sender, EventArgs e)
         {
-            try
-            {
-                SaveCurrentData();
-                MessageBox.Show("Veriler başarıyla kaydedildi.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Kaydetme hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            // UI test - sadece mesaj göster
+            MessageBox.Show("Kaydet butonu çalışıyor! (Data servisleri henüz bağlanmadı)", "UI Test", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void BtnYeni_Click(object sender, EventArgs e)
         {
             ClearForm();
+            MessageBox.Show("Form temizlendi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void BtnSil_Click(object sender, EventArgs e)
         {
-            if (MessageBox.Show("Seçili kaydı silmek istediğinizden emin misiniz?", "Silme İşlemi", 
+            if (MessageBox.Show("Silme işlemi UI testinde çalışıyor. Onaylıyor musunuz?", "UI Test", 
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                DeleteCurrentRecord();
+                MessageBox.Show("Sil butonu çalışıyor! (Data servisleri henüz bağlanmadı)", "UI Test", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -387,102 +376,19 @@ namespace PDFSystem2
 
         #endregion
 
-        #region Data Methods
+        #region Sample Data for UI Testing
 
-        private void LoadMockData()
+        private void LoadSampleData()
         {
-            try
-            {
-                LoadCircularData();
-                LoadYetkililerData();
-                LoadIslemTurleriData();
-                LoadYetkiTurleriData();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Veri yükleme hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void LoadCircularData()
-        {
-            var circular = _mockDataService.GetCircularById(_currentCircularId);
-            if (circular != null)
-            {
-                txtFirmaUnvani.Text = circular.FIRMA_UNVANI;
-                txtFirmaHesapNo.Text = circular.FIRMA_HESAP_NUMARASI;
-                dtpDuzenlenmeTarihi.Value = circular.IMZA_SIRKULERI_DUZENLEME_TARIHI ?? DateTime.Now;
-                dtpGecerlilikTarihi.Value = circular.IMZA_SIRKULERI_GECERLILIK_TARIHI ?? DateTime.Now;
-                chkSuresizGecerli.Checked = circular.SURESIZ_GECERLI;
-                txtOzelDurumlar.Text = circular.OZEL_DURUMLAR;
-                txtNoterNo.Text = circular.NOTER_IMZA_SIRKULERI_NO;
-                txtKullanici.Text = circular.KULLANICI;
-                txtAciklama.Text = circular.ACIKLAMA;
-            }
-        }
-
-        private void LoadYetkililerData()
-        {
-            var details = _mockDataService.GetCircularDetails(_currentCircularId);
-            dgvYetkililer.DataSource = details;
-            
-            if (dgvYetkililer.Columns.Count > 0)
-            {
-                dgvYetkililer.Columns["ID"].Visible = false;
-                dgvYetkililer.Columns["SGN_CIRCULAR_ID"].Visible = false;
-                dgvYetkililer.Columns["AKTIF_PASIF"].Visible = false;
-                dgvYetkililer.Columns["KAYIT_TARIHI"].Visible = false;
-                dgvYetkililer.Columns["IMZA_KOORDINAT_X"].Visible = false;
-                dgvYetkililer.Columns["IMZA_KOORDINAT_Y"].Visible = false;
-                dgvYetkililer.Columns["IMZA_KOORDINAT_WIDTH"].Visible = false;
-                dgvYetkililer.Columns["IMZA_KOORDINAT_HEIGHT"].Visible = false;
-                dgvYetkililer.Columns["IMZA_GORUNTUSU"].Visible = false;
-            }
-        }
-
-        private void LoadIslemTurleriData()
-        {
-            var operations = _mockDataService.GetOperations(_currentCircularId);
-            dgvIslemTurleri.DataSource = operations;
-            
-            if (dgvIslemTurleri.Columns.Count > 0)
-            {
-                dgvIslemTurleri.Columns["ID"].Visible = false;
-                dgvIslemTurleri.Columns["SGN_CIRCULAR_ID"].Visible = false;
-                dgvIslemTurleri.Columns["AKTIF_PASIF"].Visible = false;
-            }
-        }
-
-        private void LoadYetkiTurleriData()
-        {
-            var roleTypes = _mockDataService.GetRoleTypes(_currentCircularId);
-            dgvYetkiTurleri.DataSource = roleTypes;
-            
-            if (dgvYetkiTurleri.Columns.Count > 0)
-            {
-                dgvYetkiTurleri.Columns["ID"].Visible = false;
-                dgvYetkiTurleri.Columns["SGN_CIRCULAR_ID"].Visible = false;
-                dgvYetkiTurleri.Columns["AKTIF_PASIF"].Visible = false;
-            }
-        }
-
-        private void SaveCurrentData()
-        {
-            var circular = new SgnCircular
-            {
-                ID = _currentCircularId,
-                FIRMA_UNVANI = txtFirmaUnvani.Text,
-                FIRMA_HESAP_NUMARASI = txtFirmaHesapNo.Text,
-                IMZA_SIRKULERI_DUZENLEME_TARIHI = dtpDuzenlenmeTarihi.Value,
-                IMZA_SIRKULERI_GECERLILIK_TARIHI = chkSuresizGecerli.Checked ? null : (DateTime?)dtpGecerlilikTarihi.Value,
-                SURESIZ_GECERLI = chkSuresizGecerli.Checked,
-                OZEL_DURUMLAR = txtOzelDurumlar.Text,
-                NOTER_IMZA_SIRKULERI_NO = txtNoterNo.Text,
-                KULLANICI = txtKullanici.Text,
-                ACIKLAMA = txtAciklama.Text
-            };
-
-            _mockDataService.UpdateCircular(circular);
+            // Sadece UI test için örnek veriler
+            txtFirmaUnvani.Text = "şirket aş";
+            txtFirmaHesapNo.Text = "9999";
+            dtpDuzenlenmeTarihi.Value = new DateTime(2023, 12, 20);
+            dtpGecerlilikTarihi.Value = new DateTime(2024, 12, 20);
+            txtNoterNo.Text = "30903";
+            txtKullanici.Text = "Test Kullanıcı";
+            txtAciklama.Text = "UI Test için örnek açıklama";
+            txtOzelDurumlar.Text = "Süre belirtilmemiş ve süresiz geçerli işlemler için test verisi";
         }
 
         private void ClearForm()
@@ -497,15 +403,6 @@ namespace PDFSystem2
             txtKullanici.Clear();
             txtAciklama.Clear();
             lblPdfDurum.Text = "PDF dosyası seçilmedi.";
-        }
-
-        private void DeleteCurrentRecord()
-        {
-            _mockDataService.DeleteCircular(_currentCircularId);
-            ClearForm();
-            dgvYetkililer.DataSource = null;
-            dgvIslemTurleri.DataSource = null;
-            dgvYetkiTurleri.DataSource = null;
         }
 
         #endregion
