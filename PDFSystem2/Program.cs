@@ -1,19 +1,19 @@
 using System;
-using System.Windows.Forms;
+using Gizmox.WebGUI.Forms;
+using Gizmox.WebGUI.Common;
 
 namespace PDFSystem2
 {
     static class Program
     {
         /// <summary>
-        /// Uygulamanın ana giriş noktası.
+        /// Gizmox web uygulamasının ana giriş noktası.
         /// </summary>
         [STAThread]
         static void Main()
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainPage());
+            // Gizmox web uygulaması başlatılıyor
+            new Gizmox.WebGUI.Server.WebHost().Start();
         }
     }
 } 

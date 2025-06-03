@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
 using Gizmox.WebGUI.Forms;
+using Gizmox.WebGUI.Common;
 
 namespace PDFSystem2
 {
@@ -36,11 +37,12 @@ namespace PDFSystem2
         private Label lblAciklama;
         private TextBox txtAciklama;
         
-        // PDF Upload
+        // PDF Upload - Gizmox için düzeltildi
         private GroupBox grpPdfUpload;
         private Button btnPdfYukle;
         private Label lblPdfDurum;
         private PictureBox picPdfPreview;
+        private FileUpload fileUploadPdf;  // Gizmox FileUpload kontrolü
         
         // Yetkili Bilgileri
         private GroupBox grpYetkiliBilgileri;
@@ -207,7 +209,6 @@ namespace PDFSystem2
             txtAciklama.Location = new Point(140, 275);
             txtAciklama.Size = new Size(340, 20);
             
-            // GroupBox'a kontrolleri ekle
             grpFirmaBilgileri.Controls.AddRange(new Control[]
             {
                 lblFirmaUnvani, txtFirmaUnvani,
@@ -220,31 +221,39 @@ namespace PDFSystem2
                 lblAciklama, txtAciklama
             });
 
-            // PDF Upload GroupBox
+            // PDF Upload GroupBox - Gizmox için düzeltildi
             grpPdfUpload = new GroupBox();
             grpPdfUpload.Text = "PDF Yükleme ve İmza Seçimi";
             grpPdfUpload.Location = new Point(520, 10);
             grpPdfUpload.Size = new Size(640, 320);
             
+            // Gizmox FileUpload kontrolü
+            fileUploadPdf = new FileUpload();
+            fileUploadPdf.Location = new Point(10, 25);
+            fileUploadPdf.Size = new Size(300, 25);
+            fileUploadPdf.Filter = "PDF Files|*.pdf";
+            fileUploadPdf.MaxFileSize = 10485760; // 10MB limit
+            
             btnPdfYukle = new Button();
             btnPdfYukle.Text = "PDF Yükle";
-            btnPdfYukle.Location = new Point(10, 25);
-            btnPdfYukle.Size = new Size(100, 30);
+            btnPdfYukle.Location = new Point(320, 25);
+            btnPdfYukle.Size = new Size(100, 25);
             
             lblPdfDurum = new Label();
             lblPdfDurum.Text = "PDF dosyası seçilmedi.";
-            lblPdfDurum.Location = new Point(120, 32);
-            lblPdfDurum.Size = new Size(300, 20);
+            lblPdfDurum.Location = new Point(10, 60);
+            lblPdfDurum.Size = new Size(620, 20);
+            lblPdfDurum.ForeColor = Color.Blue;
             
             picPdfPreview = new PictureBox();
-            picPdfPreview.Location = new Point(10, 65);
-            picPdfPreview.Size = new Size(620, 240);
+            picPdfPreview.Location = new Point(10, 90);
+            picPdfPreview.Size = new Size(620, 220);
             picPdfPreview.BackColor = Color.LightGray;
             picPdfPreview.BorderStyle = BorderStyle.FixedSingle;
             
             grpPdfUpload.Controls.AddRange(new Control[]
             {
-                btnPdfYukle, lblPdfDurum, picPdfPreview
+                fileUploadPdf, btnPdfYukle, lblPdfDurum, picPdfPreview
             });
 
             // Yetkili Bilgileri GroupBox
@@ -325,6 +334,7 @@ namespace PDFSystem2
         private void SetupEventHandlers()
         {
             btnPdfYukle.Click += BtnPdfYukle_Click;
+            fileUploadPdf.FileUploaded += FileUploadPdf_FileUploaded;
             btnKaydet.Click += BtnKaydet_Click;
             btnYeni.Click += BtnYeni_Click;
             btnSil.Click += BtnSil_Click;
@@ -337,14 +347,38 @@ namespace PDFSystem2
 
         private void BtnPdfYukle_Click(object sender, EventArgs e)
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "PDF Files (*.pdf)|*.pdf";
-            openFileDialog.Title = "PDF Dosyası Seçin";
-            
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            // Gizmox FileUpload için dosya seçimi başlat
+            if (!string.IsNullOrEmpty(fileUploadPdf.FileName))
             {
-                lblPdfDurum.Text = string.Format("Seçilen dosya: {0}", openFileDialog.FileName);
-                MessageBox.Show("PDF yüklendi. İmza alanlarını seçebilirsiniz.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                fileUploadPdf.Upload();
+            }
+            else
+            {
+                MessageBox.Show("Lütfen önce bir PDF dosyası seçin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void FileUploadPdf_FileUploaded(object sender, FileUploadedEventArgs e)
+        {
+            try
+            {
+                lblPdfDurum.Text = string.Format("Yüklenen PDF: {0} ({1:N0} bytes)", 
+                    e.File.FileName, e.File.ContentLength);
+                lblPdfDurum.ForeColor = Color.Green;
+                
+                // PDF başarıyla yüklendi
+                MessageBox.Show("PDF başarıyla yüklendi! İmza koordinatlarını seçebilirsiniz.", 
+                    "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                
+                // Burada PDF'i parse edip preview'da gösterebiliriz
+                // Şimdilik sadece yükleme başarılı mesajı
+            }
+            catch (Exception ex)
+            {
+                lblPdfDurum.Text = "PDF yükleme hatası: " + ex.Message;
+                lblPdfDurum.ForeColor = Color.Red;
+                MessageBox.Show("PDF yüklenirken hata oluştu: " + ex.Message, 
+                    "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
