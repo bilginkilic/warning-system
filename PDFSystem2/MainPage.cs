@@ -127,6 +127,9 @@ namespace PDFSystem2
             CreateButtons();
             
             SetupEventHandlers();
+            
+            // İlk açılışta PDF placeholder'ını göster
+            UpdatePdfDisplay();
         }
 
         private void CreateTabControl()
@@ -505,15 +508,21 @@ namespace PDFSystem2
                     string fileName = System.IO.Path.GetFileName(dialog.FileName);
                     string filePath = dialog.FileName;
                     
-                    // PDF dosyası kontrolü - Gizmox'ta .post uzantısı da gelebilir
-                    if (!fileName.ToLower().EndsWith(".pdf") && !fileName.ToLower().Contains(".pdf") && !filePath.ToLower().Contains("pdf"))
+                    // PDF dosyası kontrolü - Daha esnek kontrol
+                    string fileNameLower = fileName.ToLower();
+                    string filePathLower = filePath.ToLower();
+                    
+                    // PDF uzantısı kontrolü (daha esnek)
+                    bool isPdfFile = fileNameLower.EndsWith(".pdf") || 
+                                     fileNameLower.Contains(".pdf") || 
+                                     filePathLower.Contains("pdf") ||
+                                     filePathLower.EndsWith(".pdf");
+                    
+                    if (!isPdfFile)
                     {
-                        // Eğer dosya adında PDF geçmiyorsa kullanıcıya soralım
-                        if (MessageBox.Show(string.Format("Seçilen dosya PDF olmayabilir: {0}\n\nYine de devam etmek istiyor musunuz?", fileName), 
-                            "Dosya Türü Uyarısı", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
-                        {
-                            return;
-                        }
+                        // Sadece bilgilendirici mesaj, devam etsin
+                        MessageBox.Show(string.Format("Seçilen dosya: {0}\n\nBu dosya PDF uzantılı görünmüyor ama yine de yüklemeye devam ediliyor.\nEğer sorun yaşarsanız lütfen .pdf uzantılı bir dosya seçin.", fileName), 
+                            "Dosya Türü Bilgisi", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     
                     // PDF dosyasını işle - dosya boyutunu kontrol et
@@ -535,6 +544,16 @@ namespace PDFSystem2
                     {
                         // Hata durumunda tahmini boyut
                         fileSize = fileName.Length * 1000;
+                    }
+                    
+                    // Dosya boyutu kontrolü - 50MB'a çıkar
+                    if (fileSize > 50 * 1024 * 1024) // 50MB
+                    {
+                        if (MessageBox.Show(string.Format("Dosya boyutu çok büyük: {0}\n\nYine de yüklemeye devam etmek istiyor musunuz?", FormatFileSize(fileSize)), 
+                            "Büyük Dosya Uyarısı", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
+                        {
+                            return;
+                        }
                     }
                     
                     ProcessUploadedPdf(fileName, filePath, fileSize);
@@ -580,8 +599,11 @@ namespace PDFSystem2
                 btnImzaSecimModu.Enabled = true;
                 btnImzaSecimModu.BackColor = Color.LightGreen;
                 
+                // Zoom level'ı güncelle
+                UpdateZoomLabel();
+                
                 // Başarı mesajı
-                MessageBox.Show(string.Format("✓ PDF BAŞARIYLA YÜKLENDİ!\n\nDosya: {0}\nBoyut: {1}\n\nİmza alanlarını seçmek için:\n1. 'İmza Seçim Modu' butonuna tıklayın\n2. PDF üzerinde fare ile alan seçin\n3. Seçilen alan otomatik olarak yetkili bilgilerine eklenecek", fileName, FormatFileSize(fileSize)), 
+                MessageBox.Show(string.Format("✓ PDF BAŞARIYLA YÜKLENDİ!\n\nDosya: {0}\nBoyut: {1}\n\nPDF önizlemesi aşağıda görüntüleniyor.\n\nİmza alanlarını seçmek için:\n1. 'İmza Seçim Modu' butonuna tıklayın\n2. PDF önizleme alanında fare ile alan seçin\n3. Seçilen alan otomatik olarak yetkili bilgilerine eklenecek", fileName, FormatFileSize(fileSize)), 
                     "PDF Yükleme Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     
                 // PDF içeriğini okuma işlemi (opsiyonel - gelecekte PDF rendering için)
@@ -692,8 +714,6 @@ namespace PDFSystem2
 
         private void UpdatePdfDisplay()
         {
-            if (string.IsNullOrEmpty(currentPdfFileName)) return;
-            
             try
             {
                 // PDF sayfası içeriği temizle
@@ -702,6 +722,13 @@ namespace PDFSystem2
                 // PDF sayfa arka planı (beyaz kağıt görünümü)
                 pnlPdfViewer.BackColor = Color.White;
                 pnlPdfViewer.BorderStyle = BorderStyle.FixedSingle;
+                
+                if (string.IsNullOrEmpty(currentPdfFileName))
+                {
+                    // PDF henüz yüklenmedi - placeholder göster
+                    CreatePdfPlaceholder();
+                    return;
+                }
                 
                 // PDF başlık bölümü
                 Panel headerPanel = new Panel();
@@ -750,6 +777,46 @@ namespace PDFSystem2
             {
                 System.Diagnostics.Debug.WriteLine(string.Format("PDF görüntüleme hatası: {0}", ex.Message));
             }
+        }
+
+        private void CreatePdfPlaceholder()
+        {
+            // Placeholder panel
+            Panel placeholderPanel = new Panel();
+            placeholderPanel.Location = new Point(20, 20);
+            placeholderPanel.Size = new Size(pnlPdfViewer.Width - 40, pnlPdfViewer.Height - 40);
+            placeholderPanel.BackColor = Color.FromArgb(248, 249, 250);
+            placeholderPanel.BorderStyle = BorderStyle.FixedSingle;
+            
+            // Büyük PDF ikonu
+            Label lblPlaceholderIcon = new Label();
+            lblPlaceholderIcon.Text = "📄";
+            lblPlaceholderIcon.Font = new Font("Arial", 72, FontStyle.Regular);
+            lblPlaceholderIcon.ForeColor = Color.LightGray;
+            lblPlaceholderIcon.Location = new Point(placeholderPanel.Width / 2 - 40, 60);
+            lblPlaceholderIcon.Size = new Size(80, 80);
+            lblPlaceholderIcon.TextAlign = ContentAlignment.MiddleCenter;
+            
+            // Başlık
+            Label lblPlaceholderTitle = new Label();
+            lblPlaceholderTitle.Text = "PDF Dosyası Bekleniyor";
+            lblPlaceholderTitle.Font = new Font("Arial", 16, FontStyle.Bold);
+            lblPlaceholderTitle.ForeColor = Color.Gray;
+            lblPlaceholderTitle.Location = new Point(50, 160);
+            lblPlaceholderTitle.Size = new Size(placeholderPanel.Width - 100, 30);
+            lblPlaceholderTitle.TextAlign = ContentAlignment.MiddleCenter;
+            
+            // Açıklama
+            Label lblPlaceholderText = new Label();
+            lblPlaceholderText.Text = "PDF dosyası yüklemek için:\n\n1. 'PDF Dosyası Seç' butonuna tıklayın\n2. Bilgisayarınızdan bir PDF dosyası seçin\n3. Dosya yüklendikten sonra bu alanda görüntülenecek\n4. İmza alanı seçimi yapabileceksiniz";
+            lblPlaceholderText.Font = new Font("Arial", 11, FontStyle.Regular);
+            lblPlaceholderText.ForeColor = Color.DarkGray;
+            lblPlaceholderText.Location = new Point(30, 200);
+            lblPlaceholderText.Size = new Size(placeholderPanel.Width - 60, 120);
+            lblPlaceholderText.TextAlign = ContentAlignment.TopCenter;
+            
+            placeholderPanel.Controls.AddRange(new Control[] { lblPlaceholderIcon, lblPlaceholderTitle, lblPlaceholderText });
+            pnlPdfViewer.Controls.Add(placeholderPanel);
         }
 
         private void CreatePdfContentArea(int startY)
@@ -1336,6 +1403,64 @@ namespace PDFSystem2
                 ShowSignatureAreas();
                 
                 pnlPdfViewer.Refresh();
+            }
+        }
+        
+        private void ShowSignatureAreas()
+        {
+            try
+            {
+                // Mevcut imza alanları için görsel işaretler ekle
+                foreach (var area in signatureAreas)
+                {
+                    // İmza alanı için Panel oluştur
+                    Panel signaturePanel = new Panel();
+                    signaturePanel.Location = new Point(area.Bounds.X, area.Bounds.Y);
+                    signaturePanel.Size = new Size(area.Bounds.Width, area.Bounds.Height);
+                    signaturePanel.BackColor = Color.FromArgb(100, Color.LightBlue); // Şeffaf mavi
+                    signaturePanel.BorderStyle = BorderStyle.FixedSingle;
+                    
+                    // İmza sahibi bilgisi için label
+                    Label signatureLabel = new Label();
+                    signatureLabel.Text = string.Format("{0}\n{1}", area.PersonName, area.PersonTitle);
+                    signatureLabel.Font = new Font("Arial", 7, FontStyle.Bold);
+                    signatureLabel.ForeColor = Color.DarkBlue;
+                    signatureLabel.BackColor = Color.White;
+                    signatureLabel.TextAlign = ContentAlignment.MiddleCenter;
+                    signatureLabel.Dock = DockStyle.Fill;
+                    
+                    signaturePanel.Controls.Add(signatureLabel);
+                    pnlPdfViewer.Controls.Add(signaturePanel);
+                    
+                    // Panel'i en üste getir
+                    signaturePanel.BringToFront();
+                }
+                
+                // Aktif seçim alanını göster
+                if (isSelecting && currentSelection.Width > 0 && currentSelection.Height > 0)
+                {
+                    Panel selectionPanel = new Panel();
+                    selectionPanel.Location = new Point(currentSelection.X, currentSelection.Y);
+                    selectionPanel.Size = new Size(currentSelection.Width, currentSelection.Height);
+                    selectionPanel.BackColor = Color.FromArgb(150, Color.Red); // Şeffaf kırmızı
+                    selectionPanel.BorderStyle = BorderStyle.FixedSingle;
+                    
+                    Label selectionLabel = new Label();
+                    selectionLabel.Text = "SEÇİLİYOR...";
+                    selectionLabel.Font = new Font("Arial", 8, FontStyle.Bold);
+                    selectionLabel.ForeColor = Color.White;
+                    selectionLabel.BackColor = Color.Red;
+                    selectionLabel.TextAlign = ContentAlignment.MiddleCenter;
+                    selectionLabel.Dock = DockStyle.Fill;
+                    
+                    selectionPanel.Controls.Add(selectionLabel);
+                    pnlPdfViewer.Controls.Add(selectionPanel);
+                    selectionPanel.BringToFront();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(string.Format("İmza alanları gösterme hatası: {0}", ex.Message));
             }
         }
 
