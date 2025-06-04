@@ -375,20 +375,32 @@ namespace PDFSystem2
             pnlPdfContainer.AutoScroll = true;  // Scroll desteği
             pnlPdfContainer.BackColor = Color.LightGray;
             
-            // İç PDF görüntüleme paneli
+            // Gerçek PDF görüntüleme için WebBrowser kontrolü
+            WebBrowser webBrowserPdf = new WebBrowser();
+            webBrowserPdf.Name = "webBrowserPdf";
+            webBrowserPdf.Location = new Point(0, 0);
+            webBrowserPdf.Size = new Size(900, 180);
+            webBrowserPdf.Dock = DockStyle.Fill;
+            webBrowserPdf.ScriptErrorsSuppressed = true;
+            
+            // İç PDF görüntüleme paneli (overlay için)
             pnlPdfViewer = new Panel();
             pnlPdfViewer.Location = new Point(0, 0);
             pnlPdfViewer.Size = new Size(800, 600); // Başlangıç boyutu
-            pnlPdfViewer.BackColor = Color.White;
+            pnlPdfViewer.BackColor = Color.Transparent;
             
-            // Gizmox için Paint eventi yerine basit text rendering kullanacağız
-            // pnlPdfViewer.Paint += PnlPdfViewer_Paint; // Gizmox'ta Paint eventi farklı çalışır
-            
+            // Mouse events
             pnlPdfViewer.MouseDown += PnlPdfViewer_MouseDown;
             pnlPdfViewer.MouseMove += PnlPdfViewer_MouseMove;
             pnlPdfViewer.MouseUp += PnlPdfViewer_MouseUp;
             
+            // WebBrowser'ı container'a ekle
+            pnlPdfContainer.Controls.Add(webBrowserPdf);
+            
+            // Overlay panel'i en üste ekle (imza seçimi için)
             pnlPdfContainer.Controls.Add(pnlPdfViewer);
+            pnlPdfViewer.BringToFront();
+            
             grpPdfUpload.Controls.Add(pnlPdfContainer);
         }
 
@@ -570,6 +582,9 @@ namespace PDFSystem2
                 // PDF dosya adını textbox'a yazdır
                 txtPdfDosyaAdi.Text = fileName;
                 
+                // Gerçek PDF'i WebBrowser'da göster
+                LoadPdfInWebBrowser(filePath);
+                
                 // PDF görüntüleme alanını güncelle
                 UpdatePdfViewer();
                 
@@ -592,6 +607,92 @@ namespace PDFSystem2
                 lblPdfDurum.Text = "PDF işleme hatası: " + ex.Message;
                 lblPdfDurum.ForeColor = Color.Red;
                 MessageBox.Show("PDF işleme hatası: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void LoadPdfInWebBrowser(string filePath)
+        {
+            try
+            {
+                // WebBrowser kontrolünü bul
+                WebBrowser webBrowser = pnlPdfContainer.Controls.OfType<WebBrowser>().FirstOrDefault();
+                
+                if (webBrowser != null)
+                {
+                    // Dosya yolunu URL formatına çevir
+                    string fileUrl = "";
+                    
+                    if (System.IO.File.Exists(filePath))
+                    {
+                        // Yerel dosya ise
+                        fileUrl = "file:///" + filePath.Replace("\\", "/");
+                    }
+                    else
+                    {
+                        // Web yolu ise (Gizmox'ta genellikle temporary URL)
+                        fileUrl = filePath;
+                    }
+                    
+                    // PDF'i WebBrowser'da aç
+                    webBrowser.Navigate(fileUrl);
+                    
+                    // Alternatif: Google Docs Viewer kullan (internet bağlantısı gerektirir)
+                    // string googleViewerUrl = string.Format("https://docs.google.com/viewer?url={0}&embedded=true", System.Web.HttpUtility.UrlEncode(fileUrl));
+                    // webBrowser.Navigate(googleViewerUrl);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(string.Format("PDF WebBrowser yükleme hatası: {0}", ex.Message));
+                
+                // Hata durumunda fallback olarak placeholder göster
+                ShowPdfPlaceholder();
+            }
+        }
+
+        private void ShowPdfPlaceholder()
+        {
+            try
+            {
+                WebBrowser webBrowser = pnlPdfContainer.Controls.OfType<WebBrowser>().FirstOrDefault();
+                
+                if (webBrowser != null)
+                {
+                    // HTML placeholder oluştur
+                    string htmlContent = string.Format(@"
+                        <html>
+                        <head>
+                            <style>
+                                body {{ font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }}
+                                .pdf-placeholder {{ 
+                                    background: white; 
+                                    border: 2px dashed #ccc; 
+                                    padding: 40px; 
+                                    text-align: center;
+                                    border-radius: 10px;
+                                }}
+                                .title {{ color: #333; font-size: 24px; font-weight: bold; margin-bottom: 20px; }}
+                                .info {{ color: #666; font-size: 14px; margin: 10px 0; }}
+                                .instruction {{ color: #007acc; font-size: 16px; font-weight: bold; margin-top: 20px; }}
+                            </style>
+                        </head>
+                        <body>
+                            <div class='pdf-placeholder'>
+                                <div class='title'>📄 PDF YÜKLEME BAŞARILI</div>
+                                <div class='info'>Dosya: {0}</div>
+                                <div class='info'>Gerçek PDF preview için tarayıcı desteği gerekebilir</div>
+                                <div class='instruction'>⬇ İmza alanı seçmek için aşağıdaki butonları kullanın</div>
+                            </div>
+                        </body>
+                        </html>
+                    ", currentPdfFileName);
+                    
+                    webBrowser.DocumentText = htmlContent;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(string.Format("PDF placeholder gösterme hatası: {0}", ex.Message));
             }
         }
 
@@ -1099,77 +1200,9 @@ namespace PDFSystem2
             
             try
             {
-                // PDF içeriği için zengin görsel gösterim
-                pnlPdfViewer.BackColor = Color.White;
-                
-                // Daha detaylı PDF simülasyonu için çoklu Label ekleyelim
+                // PDF overlay panel'ini temizle (imza alanları için)
+                pnlPdfViewer.BackColor = Color.Transparent;
                 pnlPdfViewer.Controls.Clear();
-                
-                // Başlık etiketi
-                Label lblTitle = new Label();
-                lblTitle.Text = "İMZA SİRKÜLERİ BELGESI";
-                lblTitle.Font = new Font("Arial", 14, FontStyle.Bold);
-                lblTitle.ForeColor = Color.DarkBlue;
-                lblTitle.Location = new Point(20, 20);
-                lblTitle.Size = new Size(300, 25);
-                pnlPdfViewer.Controls.Add(lblTitle);
-                
-                // Dosya bilgisi
-                Label lblFileInfo = new Label();
-                lblFileInfo.Text = string.Format("Dosya: {0}", currentPdfFileName);
-                lblFileInfo.Font = new Font("Arial", 10, FontStyle.Regular);
-                lblFileInfo.ForeColor = Color.Black;
-                lblFileInfo.Location = new Point(20, 50);
-                lblFileInfo.Size = new Size(400, 20);
-                pnlPdfViewer.Controls.Add(lblFileInfo);
-                
-                // Firma bilgisi örneği
-                Label lblCompany = new Label();
-                lblCompany.Text = "ÖRNEK FİRMA A.Ş.";
-                lblCompany.Font = new Font("Arial", 12, FontStyle.Bold);
-                lblCompany.ForeColor = Color.DarkGreen;
-                lblCompany.Location = new Point(20, 80);
-                lblCompany.Size = new Size(200, 20);
-                pnlPdfViewer.Controls.Add(lblCompany);
-                
-                // Yetkili bilgileri başlığı
-                Label lblAuthTitle = new Label();
-                lblAuthTitle.Text = "YETKİLİ İMZA SAHİPLERİ:";
-                lblAuthTitle.Font = new Font("Arial", 10, FontStyle.Bold);
-                lblAuthTitle.ForeColor = Color.DarkRed;
-                lblAuthTitle.Location = new Point(20, 110);
-                lblAuthTitle.Size = new Size(200, 20);
-                pnlPdfViewer.Controls.Add(lblAuthTitle);
-                
-                // Örnek yetkili listesi
-                string[] authorities = {
-                    "• Genel Müdür - A Grubu Yetki",
-                    "• Mali İşler Müdürü - B Grubu Yetki", 
-                    "• İnsan Kaynakları Müdürü - B Grubu Yetki",
-                    "• Muhasebe Şefi - C Grubu Yetki"
-                };
-                
-                int yPos = 135;
-                foreach (string auth in authorities)
-                {
-                    Label lblAuth = new Label();
-                    lblAuth.Text = auth;
-                    lblAuth.Font = new Font("Arial", 9, FontStyle.Regular);
-                    lblAuth.ForeColor = Color.Black;
-                    lblAuth.Location = new Point(40, yPos);
-                    lblAuth.Size = new Size(300, 18);
-                    pnlPdfViewer.Controls.Add(lblAuth);
-                    yPos += 20;
-                }
-                
-                // İmza alanları için bilgi
-                Label lblSignatureInfo = new Label();
-                lblSignatureInfo.Text = "İmza alanı seçmek için 'İmza Seçim Modu'nu aktif edin ve fare ile alan seçin.";
-                lblSignatureInfo.Font = new Font("Arial", 9, FontStyle.Italic);
-                lblSignatureInfo.ForeColor = Color.Blue;
-                lblSignatureInfo.Location = new Point(20, yPos + 20);
-                lblSignatureInfo.Size = new Size(450, 40);
-                pnlPdfViewer.Controls.Add(lblSignatureInfo);
                 
                 // PDF boyutunu zoom faktörüne göre ayarla
                 int newWidth = (int)(800 * zoomFactor);
@@ -1177,18 +1210,19 @@ namespace PDFSystem2
                 
                 pnlPdfViewer.Size = new Size(newWidth, newHeight);
                 
-                // Zoom faktörüne göre font boyutlarını ayarla
-                foreach (Control ctrl in pnlPdfViewer.Controls)
+                // WebBrowser'ın boyutunu da güncelle
+                WebBrowser webBrowser = pnlPdfContainer.Controls.OfType<WebBrowser>().FirstOrDefault();
+                if (webBrowser != null)
                 {
-                    if (ctrl is Label)
+                    // WebBrowser zoom'u CSS ile kontrol edilebilir
+                    string zoomScript = string.Format("document.body.style.zoom = '{0}%';", (zoomFactor * 100));
+                    try
                     {
-                        Label lbl = ctrl as Label;
-                        float newSize = lbl.Font.Size * zoomFactor;
-                        lbl.Font = new Font(lbl.Font.FontFamily, newSize, lbl.Font.Style);
-                        
-                        // Pozisyonları da zoom'a göre ayarla
-                        lbl.Location = new Point((int)(lbl.Location.X * zoomFactor), (int)(lbl.Location.Y * zoomFactor));
-                        lbl.Size = new Size((int)(lbl.Size.Width * zoomFactor), (int)(lbl.Size.Height * zoomFactor));
+                        webBrowser.Document?.InvokeScript("eval", new object[] { zoomScript });
+                    }
+                    catch
+                    {
+                        // Script çalışmazsa sorun değil
                     }
                 }
             }
