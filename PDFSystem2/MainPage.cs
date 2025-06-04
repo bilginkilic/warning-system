@@ -387,6 +387,7 @@ namespace PDFSystem2
             pnlPdfViewer.MouseMove += PnlPdfViewer_MouseMove;
             pnlPdfViewer.MouseUp += PnlPdfViewer_MouseUp;
             
+            // PDF viewer'ı container'a ekle
             pnlPdfContainer.Controls.Add(pnlPdfViewer);
             grpPdfUpload.Controls.Add(pnlPdfContainer);
         }
