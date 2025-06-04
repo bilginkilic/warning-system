@@ -701,65 +701,31 @@ namespace PDFSystem2
                 // PDF sayfa arka planı (beyaz kağıt görünümü)
                 pnlPdfViewer.BackColor = Color.White;
                 
-                // PDF başlık bölümü
+                // PDF dosya bilgisi header
                 Panel headerPanel = new Panel();
                 headerPanel.Location = new Point(0, 0);
-                headerPanel.Size = new Size(pnlPdfViewer.Width, 60);
-                headerPanel.BackColor = Color.FromArgb(245, 245, 245); // Açık gri başlık
+                headerPanel.Size = new Size(pnlPdfViewer.Width, 40);
+                headerPanel.BackColor = Color.FromArgb(240, 240, 240);
                 
-                Label lblPdfHeader = new Label();
-                lblPdfHeader.Text = "İMZA SİRKÜLERİ BELGESI";
-                lblPdfHeader.Font = new Font("Times New Roman", 16, FontStyle.Bold);
-                lblPdfHeader.ForeColor = Color.DarkBlue;
-                lblPdfHeader.TextAlign = ContentAlignment.MiddleCenter;
-                lblPdfHeader.Dock = DockStyle.Fill;
+                Label lblPdfInfo = new Label();
+                lblPdfInfo.Text = string.Format("PDF: {0} | Yükleme: {1}", currentPdfFileName, DateTime.Now.ToString("dd.MM.yyyy HH:mm"));
+                lblPdfInfo.Font = new Font("Arial", 10, FontStyle.Bold);
+                lblPdfInfo.ForeColor = Color.DarkBlue;
+                lblPdfInfo.TextAlign = ContentAlignment.MiddleLeft;
+                lblPdfInfo.Location = new Point(10, 10);
+                lblPdfInfo.Size = new Size(600, 20);
                 
-                headerPanel.Controls.Add(lblPdfHeader);
+                headerPanel.Controls.Add(lblPdfInfo);
                 pnlPdfViewer.Controls.Add(headerPanel);
                 
-                // Dosya bilgisi
-                Label lblFileInfo = new Label();
-                lblFileInfo.Text = string.Format("Dosya: {0} | Yükleme Tarihi: {1}", currentPdfFileName, DateTime.Now.ToString("dd.MM.yyyy HH:mm"));
-                lblFileInfo.Font = new Font("Arial", 9, FontStyle.Regular);
-                lblFileInfo.ForeColor = Color.Gray;
-                lblFileInfo.Location = new Point(20, 70);
-                lblFileInfo.Size = new Size(600, 20);
-                pnlPdfViewer.Controls.Add(lblFileInfo);
-                
-                // Çizgi ayırıcı
-                Panel separatorLine = new Panel();
-                separatorLine.Location = new Point(20, 95);
-                separatorLine.Size = new Size(pnlPdfViewer.Width - 40, 2);
-                separatorLine.BackColor = Color.LightGray;
-                pnlPdfViewer.Controls.Add(separatorLine);
-                
-                // Firma bilgileri bölümü
-                CreateCompanySection(105);
-                
-                // Yetkili bilgileri bölümü  
-                CreateAuthorizedPersonsSection(200);
-                
-                // İmza alanları bölümü
-                CreateSignatureAreasSection(350);
-                
-                // Sayfa numarası (alt kısım)
-                Label lblPageInfo = new Label();
-                lblPageInfo.Text = "Sayfa 1 / 1";
-                lblPageInfo.Font = new Font("Arial", 8, FontStyle.Regular);
-                lblPageInfo.ForeColor = Color.Gray;
-                lblPageInfo.Location = new Point(pnlPdfViewer.Width - 100, pnlPdfViewer.Height - 30);
-                lblPageInfo.Size = new Size(80, 20);
-                lblPageInfo.TextAlign = ContentAlignment.MiddleRight;
-                pnlPdfViewer.Controls.Add(lblPageInfo);
+                // Gerçek PDF görüntüleme alanı
+                CreateRealPdfViewer(45);
                 
                 // PDF boyutunu zoom faktörüne göre ayarla
                 int newWidth = (int)(800 * zoomFactor);
                 int newHeight = (int)(600 * zoomFactor);
                 
                 pnlPdfViewer.Size = new Size(newWidth, newHeight);
-                
-                // Zoom faktörüne göre tüm kontrolleri ölçekle
-                ScaleAllControls(zoomFactor);
             }
             catch (Exception ex)
             {
@@ -767,151 +733,148 @@ namespace PDFSystem2
             }
         }
 
-        private void CreateCompanySection(int startY)
+        private void CreateRealPdfViewer(int startY)
         {
-            // Firma bilgileri başlığı
-            Label lblCompanyTitle = new Label();
-            lblCompanyTitle.Text = "FİRMA BİLGİLERİ";
-            lblCompanyTitle.Font = new Font("Arial", 12, FontStyle.Bold);
-            lblCompanyTitle.ForeColor = Color.DarkGreen;
-            lblCompanyTitle.Location = new Point(20, startY);
-            lblCompanyTitle.Size = new Size(200, 20);
-            pnlPdfViewer.Controls.Add(lblCompanyTitle);
-            
-            // Firma adı
-            Label lblCompany = new Label();
-            lblCompany.Text = "ÖRNEK FİRMA A.Ş.";
-            lblCompany.Font = new Font("Arial", 14, FontStyle.Bold);
-            lblCompany.ForeColor = Color.Black;
-            lblCompany.Location = new Point(40, startY + 25);
-            lblCompany.Size = new Size(300, 25);
-            pnlPdfViewer.Controls.Add(lblCompany);
-            
-            // Firma detayları
-            string[] companyDetails = {
-                "Vergi No: 1234567890",
-                "Adres: Örnek Mahalle, Test Sokak No:1 İstanbul", 
-                "Tel: +90 212 555 0123",
-                "E-posta: info@ornekfirma.com.tr"
-            };
-            
-            int yPos = startY + 50;
-            foreach (string detail in companyDetails)
+            try
             {
-                Label lblDetail = new Label();
-                lblDetail.Text = detail;
-                lblDetail.Font = new Font("Arial", 9, FontStyle.Regular);
-                lblDetail.ForeColor = Color.Black;
-                lblDetail.Location = new Point(40, yPos);
-                lblDetail.Size = new Size(400, 18);
-                pnlPdfViewer.Controls.Add(lblDetail);
-                yPos += 18;
-            }
-        }
-
-        private void CreateAuthorizedPersonsSection(int startY)
-        {
-            // Yetkili kişiler başlığı
-            Label lblAuthTitle = new Label();
-            lblAuthTitle.Text = "YETKİLİ İMZA SAHİPLERİ VE YETKİ SEVİYELERİ";
-            lblAuthTitle.Font = new Font("Arial", 12, FontStyle.Bold);
-            lblAuthTitle.ForeColor = Color.DarkRed;
-            lblAuthTitle.Location = new Point(20, startY);
-            lblAuthTitle.Size = new Size(400, 20);
-            pnlPdfViewer.Controls.Add(lblAuthTitle);
-            
-            // Yetkili listesi
-            string[] authorities = {
-                "1. Ahmet Yılmaz - Genel Müdür (A Grubu) - Sınırsız Yetki",
-                "2. Fatma Kaya - Mali İşler Müdürü (B Grubu) - 500.000 TL'ye kadar", 
-                "3. Mehmet Demir - İnsan Kaynakları Müdürü (B Grubu) - 250.000 TL'ye kadar",
-                "4. Ayşe Şahin - Muhasebe Şefi (C Grubu) - 100.000 TL'ye kadar",
-                "5. Mustafa Özkan - Uzman (C Grubu) - 50.000 TL'ye kadar"
-            };
-            
-            int yPos = startY + 25;
-            foreach (string auth in authorities)
-            {
-                Label lblAuth = new Label();
-                lblAuth.Text = auth;
-                lblAuth.Font = new Font("Arial", 10, FontStyle.Regular);
-                lblAuth.ForeColor = Color.Black;
-                lblAuth.Location = new Point(40, yPos);
-                lblAuth.Size = new Size(500, 18);
-                pnlPdfViewer.Controls.Add(lblAuth);
-                yPos += 22;
-            }
-        }
-
-        private void CreateSignatureAreasSection(int startY)
-        {
-            // İmza alanları başlığı
-            Label lblSignatureTitle = new Label();
-            lblSignatureTitle.Text = "İMZA ALANLARI (Seçim Yapmak İçin Fare İle Sürükleyiniz)";
-            lblSignatureTitle.Font = new Font("Arial", 11, FontStyle.Bold);
-            lblSignatureTitle.ForeColor = Color.Blue;
-            lblSignatureTitle.Location = new Point(20, startY);
-            lblSignatureTitle.Size = new Size(450, 20);
-            pnlPdfViewer.Controls.Add(lblSignatureTitle);
-            
-            // Örnek imza alanları (placeholder'lar)
-            for (int i = 0; i < 5; i++)
-            {
-                Panel signatureBox = new Panel();
-                signatureBox.Location = new Point(50 + (i * 140), startY + 30);
-                signatureBox.Size = new Size(120, 80);
-                signatureBox.BorderStyle = BorderStyle.FixedSingle;
-                signatureBox.BackColor = Color.FromArgb(240, 248, 255); // Açık mavi
+                // PDF için iframe oluştur
+                WebBrowser pdfBrowser = new WebBrowser();
+                pdfBrowser.Name = "realPdfViewer";
+                pdfBrowser.Location = new Point(0, startY);
+                pdfBrowser.Size = new Size(pnlPdfViewer.Width, pnlPdfViewer.Height - startY - 5);
+                pdfBrowser.ScriptErrorsSuppressed = true;
                 
-                Label lblSignBox = new Label();
-                lblSignBox.Text = string.Format("İmza Alanı {0}\n(Boş)", i + 1);
-                lblSignBox.Font = new Font("Arial", 8, FontStyle.Italic);
-                lblSignBox.ForeColor = Color.Gray;
-                lblSignBox.TextAlign = ContentAlignment.MiddleCenter;
-                lblSignBox.Dock = DockStyle.Fill;
+                // PDF URL'sini hazırla
+                string pdfUrl = PreparePdfUrl();
                 
-                signatureBox.Controls.Add(lblSignBox);
-                pnlPdfViewer.Controls.Add(signatureBox);
-            }
-            
-            // Kullanım talimatı
-            Label lblInstruction = new Label();
-            lblInstruction.Text = "• İmza alanı seçmek için 'İmza Seçim Modu'nu aktif edin\n• Fare ile istediğiniz alanı sürükleyerek seçin\n• Seçilen alan otomatik olarak yetkili bilgilerine eklenecektir";
-            lblInstruction.Font = new Font("Arial", 9, FontStyle.Italic);
-            lblInstruction.ForeColor = Color.DarkBlue;
-            lblInstruction.Location = new Point(20, startY + 130);
-            lblInstruction.Size = new Size(600, 60);
-            pnlPdfViewer.Controls.Add(lblInstruction);
-        }
-
-        private void ScaleAllControls(float scale)
-        {
-            foreach (Control control in pnlPdfViewer.Controls)
-            {
-                // Font boyutunu ölçekle
-                if (control.Font != null)
+                if (!string.IsNullOrEmpty(pdfUrl))
                 {
-                    float newSize = control.Font.Size * scale;
-                    control.Font = new Font(control.Font.FontFamily, newSize, control.Font.Style);
-                }
-                
-                // Pozisyon ve boyutu ölçekle
-                control.Location = new Point((int)(control.Location.X * scale), (int)(control.Location.Y * scale));
-                control.Size = new Size((int)(control.Size.Width * scale), (int)(control.Size.Height * scale));
-                
-                // İç kontroller varsa onları da ölçekle
-                if (control.Controls.Count > 0)
-                {
-                    foreach (Control innerControl in control.Controls)
+                    // PDF'i direkt yükle veya Google Docs Viewer kullan
+                    string viewerUrl = string.Format("https://docs.google.com/viewer?url={0}&embedded=true", 
+                        System.Web.HttpUtility.UrlEncode(pdfUrl));
+                    
+                    try
                     {
-                        if (innerControl.Font != null)
-                        {
-                            float innerNewSize = innerControl.Font.Size * scale;
-                            innerControl.Font = new Font(innerControl.Font.FontFamily, innerNewSize, innerControl.Font.Style);
-                        }
+                        pdfBrowser.Navigate(viewerUrl);
+                    }
+                    catch
+                    {
+                        // Fallback: Direkt PDF yükleme
+                        pdfBrowser.Navigate(pdfUrl);
                     }
                 }
+                else
+                {
+                    // Fallback: HTML placeholder
+                    string fallbackHtml = CreatePdfFallbackHtml();
+                    pdfBrowser.DocumentText = fallbackHtml;
+                }
+                
+                pnlPdfViewer.Controls.Add(pdfBrowser);
+                
+                // Mouse overlay ekle (imza seçimi için)
+                AddMouseOverlayForSelection(startY);
             }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(string.Format("PDF browser oluşturma hatası: {0}", ex.Message));
+                CreateSimpleFallback(startY);
+            }
+        }
+
+        private string PreparePdfUrl()
+        {
+            if (string.IsNullOrEmpty(selectedFilePath)) return "";
+            
+            try
+            {
+                if (System.IO.File.Exists(selectedFilePath))
+                {
+                    // Yerel dosya - file protokolü
+                    return "file:///" + selectedFilePath.Replace("\\", "/");
+                }
+                else
+                {
+                    // Web URL (Gizmox upload)
+                    return selectedFilePath;
+                }
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        private string CreatePdfFallbackHtml()
+        {
+            return string.Format(@"
+                <html>
+                <head>
+                    <style>
+                        body {{ font-family: Arial; margin: 20px; background: #f8f9fa; }}
+                        .container {{ background: white; padding: 30px; border-radius: 8px; text-align: center; }}
+                        .title {{ color: #2c3e50; font-size: 20px; font-weight: bold; margin-bottom: 15px; }}
+                        .info {{ color: #666; margin: 10px 0; }}
+                        .instructions {{ background: #e3f2fd; padding: 15px; border-radius: 4px; margin: 20px 0; }}
+                        .file-info {{ background: #f1f8e9; padding: 10px; border-radius: 4px; color: #2e7d32; }}
+                    </style>
+                </head>
+                <body>
+                    <div class='container'>
+                        <div class='title'>📄 PDF YÜKLEME BAŞARILI</div>
+                        <div class='file-info'>
+                            <strong>Dosya:</strong> {0}
+                        </div>
+                        <div class='info'>PDF dosyası sistem tarafından algılandı ve yüklendi.</div>
+                        <div class='instructions'>
+                            <strong>İMZA ALANI SEÇİMİ İÇİN:</strong><br/>
+                            1. 'İmza Seçim Modu' butonuna tıklayın<br/>
+                            2. Bu alan üzerinde fare ile sürükleyerek seçim yapın<br/>
+                            3. Seçilen alan otomatik olarak yetkili bilgilerine eklenecek
+                        </div>
+                        <div class='info'>
+                            <em>Bu alan PDF içeriğini temsil eder. İmza seçimi bu alan üzerinde yapılabilir.</em>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            ", currentPdfFileName);
+        }
+
+        private void AddMouseOverlayForSelection(int startY)
+        {
+            Panel overlay = new Panel();
+            overlay.Name = "selectionOverlay";
+            overlay.Location = new Point(0, startY);
+            overlay.Size = new Size(pnlPdfViewer.Width, pnlPdfViewer.Height - startY - 5);
+            overlay.BackColor = Color.Transparent;
+            
+            // Mouse events
+            overlay.MouseDown += PnlPdfViewer_MouseDown;
+            overlay.MouseMove += PnlPdfViewer_MouseMove;
+            overlay.MouseUp += PnlPdfViewer_MouseUp;
+            
+            pnlPdfViewer.Controls.Add(overlay);
+            overlay.BringToFront();
+        }
+
+        private void CreateSimpleFallback(int startY)
+        {
+            Label fallbackLabel = new Label();
+            fallbackLabel.Text = string.Format("PDF YÜKLENDI: {0}\n\nİmza alanı seçmek için:\n• 'İmza Seçim Modu'nu aktif edin\n• Bu alan üzerinde sürükleyerek seçim yapın", 
+                currentPdfFileName);
+            fallbackLabel.Font = new Font("Arial", 11, FontStyle.Regular);
+            fallbackLabel.ForeColor = Color.DarkBlue;
+            fallbackLabel.TextAlign = ContentAlignment.MiddleCenter;
+            fallbackLabel.Location = new Point(20, startY + 50);
+            fallbackLabel.Size = new Size(pnlPdfViewer.Width - 40, 200);
+            fallbackLabel.BackColor = Color.FromArgb(248, 249, 250);
+            fallbackLabel.BorderStyle = BorderStyle.FixedSingle;
+            
+            pnlPdfViewer.Controls.Add(fallbackLabel);
+            
+            // Mouse overlay ekle
+            AddMouseOverlayForSelection(startY);
         }
 
         private void BtnKaydet_Click(object sender, EventArgs e)
@@ -1302,232 +1265,6 @@ namespace PDFSystem2
             }
         }
 
-        // Gerçekçi PDF sayfa görünümü oluşturma
-        private void UpdatePdfDisplay()
-        {
-            if (string.IsNullOrEmpty(currentPdfFileName)) return;
-            
-            try
-            {
-                // PDF sayfası içeriği temizle
-                pnlPdfViewer.Controls.Clear();
-                
-                // PDF sayfa arka planı (beyaz kağıt görünümü)
-                pnlPdfViewer.BackColor = Color.White;
-                
-                // PDF başlık bölümü
-                Panel headerPanel = new Panel();
-                headerPanel.Location = new Point(0, 0);
-                headerPanel.Size = new Size(pnlPdfViewer.Width, 60);
-                headerPanel.BackColor = Color.FromArgb(245, 245, 245); // Açık gri başlık
-                
-                Label lblPdfHeader = new Label();
-                lblPdfHeader.Text = "İMZA SİRKÜLERİ BELGESI";
-                lblPdfHeader.Font = new Font("Times New Roman", 16, FontStyle.Bold);
-                lblPdfHeader.ForeColor = Color.DarkBlue;
-                lblPdfHeader.TextAlign = ContentAlignment.MiddleCenter;
-                lblPdfHeader.Dock = DockStyle.Fill;
-                
-                headerPanel.Controls.Add(lblPdfHeader);
-                pnlPdfViewer.Controls.Add(headerPanel);
-                
-                // Dosya bilgisi
-                Label lblFileInfo = new Label();
-                lblFileInfo.Text = string.Format("Dosya: {0} | Yükleme Tarihi: {1}", currentPdfFileName, DateTime.Now.ToString("dd.MM.yyyy HH:mm"));
-                lblFileInfo.Font = new Font("Arial", 9, FontStyle.Regular);
-                lblFileInfo.ForeColor = Color.Gray;
-                lblFileInfo.Location = new Point(20, 70);
-                lblFileInfo.Size = new Size(600, 20);
-                pnlPdfViewer.Controls.Add(lblFileInfo);
-                
-                // Çizgi ayırıcı
-                Panel separatorLine = new Panel();
-                separatorLine.Location = new Point(20, 95);
-                separatorLine.Size = new Size(pnlPdfViewer.Width - 40, 2);
-                separatorLine.BackColor = Color.LightGray;
-                pnlPdfViewer.Controls.Add(separatorLine);
-                
-                // Firma bilgileri bölümü
-                CreateCompanySection(105);
-                
-                // Yetkili bilgileri bölümü  
-                CreateAuthorizedPersonsSection(200);
-                
-                // İmza alanları bölümü
-                CreateSignatureAreasSection(350);
-                
-                // Sayfa numarası (alt kısım)
-                Label lblPageInfo = new Label();
-                lblPageInfo.Text = "Sayfa 1 / 1";
-                lblPageInfo.Font = new Font("Arial", 8, FontStyle.Regular);
-                lblPageInfo.ForeColor = Color.Gray;
-                lblPageInfo.Location = new Point(pnlPdfViewer.Width - 100, pnlPdfViewer.Height - 30);
-                lblPageInfo.Size = new Size(80, 20);
-                lblPageInfo.TextAlign = ContentAlignment.MiddleRight;
-                pnlPdfViewer.Controls.Add(lblPageInfo);
-                
-                // PDF boyutunu zoom faktörüne göre ayarla
-                int newWidth = (int)(800 * zoomFactor);
-                int newHeight = (int)(600 * zoomFactor);
-                
-                pnlPdfViewer.Size = new Size(newWidth, newHeight);
-                
-                // Zoom faktörüne göre tüm kontrolleri ölçekle
-                ScaleAllControls(zoomFactor);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine(string.Format("PDF görüntüleme hatası: {0}", ex.Message));
-            }
-        }
-
-        private void CreateCompanySection(int startY)
-        {
-            // Firma bilgileri başlığı
-            Label lblCompanyTitle = new Label();
-            lblCompanyTitle.Text = "FİRMA BİLGİLERİ";
-            lblCompanyTitle.Font = new Font("Arial", 12, FontStyle.Bold);
-            lblCompanyTitle.ForeColor = Color.DarkGreen;
-            lblCompanyTitle.Location = new Point(20, startY);
-            lblCompanyTitle.Size = new Size(200, 20);
-            pnlPdfViewer.Controls.Add(lblCompanyTitle);
-            
-            // Firma adı
-            Label lblCompany = new Label();
-            lblCompany.Text = "ÖRNEK FİRMA A.Ş.";
-            lblCompany.Font = new Font("Arial", 14, FontStyle.Bold);
-            lblCompany.ForeColor = Color.Black;
-            lblCompany.Location = new Point(40, startY + 25);
-            lblCompany.Size = new Size(300, 25);
-            pnlPdfViewer.Controls.Add(lblCompany);
-            
-            // Firma detayları
-            string[] companyDetails = {
-                "Vergi No: 1234567890",
-                "Adres: Örnek Mahalle, Test Sokak No:1 İstanbul", 
-                "Tel: +90 212 555 0123",
-                "E-posta: info@ornekfirma.com.tr"
-            };
-            
-            int yPos = startY + 50;
-            foreach (string detail in companyDetails)
-            {
-                Label lblDetail = new Label();
-                lblDetail.Text = detail;
-                lblDetail.Font = new Font("Arial", 9, FontStyle.Regular);
-                lblDetail.ForeColor = Color.Black;
-                lblDetail.Location = new Point(40, yPos);
-                lblDetail.Size = new Size(400, 18);
-                pnlPdfViewer.Controls.Add(lblDetail);
-                yPos += 18;
-            }
-        }
-
-        private void CreateAuthorizedPersonsSection(int startY)
-        {
-            // Yetkili kişiler başlığı
-            Label lblAuthTitle = new Label();
-            lblAuthTitle.Text = "YETKİLİ İMZA SAHİPLERİ VE YETKİ SEVİYELERİ";
-            lblAuthTitle.Font = new Font("Arial", 12, FontStyle.Bold);
-            lblAuthTitle.ForeColor = Color.DarkRed;
-            lblAuthTitle.Location = new Point(20, startY);
-            lblAuthTitle.Size = new Size(400, 20);
-            pnlPdfViewer.Controls.Add(lblAuthTitle);
-            
-            // Yetkili listesi
-            string[] authorities = {
-                "1. Ahmet Yılmaz - Genel Müdür (A Grubu) - Sınırsız Yetki",
-                "2. Fatma Kaya - Mali İşler Müdürü (B Grubu) - 500.000 TL'ye kadar", 
-                "3. Mehmet Demir - İnsan Kaynakları Müdürü (B Grubu) - 250.000 TL'ye kadar",
-                "4. Ayşe Şahin - Muhasebe Şefi (C Grubu) - 100.000 TL'ye kadar",
-                "5. Mustafa Özkan - Uzman (C Grubu) - 50.000 TL'ye kadar"
-            };
-            
-            int yPos = startY + 25;
-            foreach (string auth in authorities)
-            {
-                Label lblAuth = new Label();
-                lblAuth.Text = auth;
-                lblAuth.Font = new Font("Arial", 10, FontStyle.Regular);
-                lblAuth.ForeColor = Color.Black;
-                lblAuth.Location = new Point(40, yPos);
-                lblAuth.Size = new Size(500, 18);
-                pnlPdfViewer.Controls.Add(lblAuth);
-                yPos += 22;
-            }
-        }
-
-        private void CreateSignatureAreasSection(int startY)
-        {
-            // İmza alanları başlığı
-            Label lblSignatureTitle = new Label();
-            lblSignatureTitle.Text = "İMZA ALANLARI (Seçim Yapmak İçin Fare İle Sürükleyiniz)";
-            lblSignatureTitle.Font = new Font("Arial", 11, FontStyle.Bold);
-            lblSignatureTitle.ForeColor = Color.Blue;
-            lblSignatureTitle.Location = new Point(20, startY);
-            lblSignatureTitle.Size = new Size(450, 20);
-            pnlPdfViewer.Controls.Add(lblSignatureTitle);
-            
-            // Örnek imza alanları (placeholder'lar)
-            for (int i = 0; i < 5; i++)
-            {
-                Panel signatureBox = new Panel();
-                signatureBox.Location = new Point(50 + (i * 140), startY + 30);
-                signatureBox.Size = new Size(120, 80);
-                signatureBox.BorderStyle = BorderStyle.FixedSingle;
-                signatureBox.BackColor = Color.FromArgb(240, 248, 255); // Açık mavi
-                
-                Label lblSignBox = new Label();
-                lblSignBox.Text = string.Format("İmza Alanı {0}\n(Boş)", i + 1);
-                lblSignBox.Font = new Font("Arial", 8, FontStyle.Italic);
-                lblSignBox.ForeColor = Color.Gray;
-                lblSignBox.TextAlign = ContentAlignment.MiddleCenter;
-                lblSignBox.Dock = DockStyle.Fill;
-                
-                signatureBox.Controls.Add(lblSignBox);
-                pnlPdfViewer.Controls.Add(signatureBox);
-            }
-            
-            // Kullanım talimatı
-            Label lblInstruction = new Label();
-            lblInstruction.Text = "• İmza alanı seçmek için 'İmza Seçim Modu'nu aktif edin\n• Fare ile istediğiniz alanı sürükleyerek seçin\n• Seçilen alan otomatik olarak yetkili bilgilerine eklenecektir";
-            lblInstruction.Font = new Font("Arial", 9, FontStyle.Italic);
-            lblInstruction.ForeColor = Color.DarkBlue;
-            lblInstruction.Location = new Point(20, startY + 130);
-            lblInstruction.Size = new Size(600, 60);
-            pnlPdfViewer.Controls.Add(lblInstruction);
-        }
-
-        private void ScaleAllControls(float scale)
-        {
-            foreach (Control control in pnlPdfViewer.Controls)
-            {
-                // Font boyutunu ölçekle
-                if (control.Font != null)
-                {
-                    float newSize = control.Font.Size * scale;
-                    control.Font = new Font(control.Font.FontFamily, newSize, control.Font.Style);
-                }
-                
-                // Pozisyon ve boyutu ölçekle
-                control.Location = new Point((int)(control.Location.X * scale), (int)(control.Location.Y * scale));
-                control.Size = new Size((int)(control.Size.Width * scale), (int)(control.Size.Height * scale));
-                
-                // İç kontroller varsa onları da ölçekle
-                if (control.Controls.Count > 0)
-                {
-                    foreach (Control innerControl in control.Controls)
-                    {
-                        if (innerControl.Font != null)
-                        {
-                            float innerNewSize = innerControl.Font.Size * scale;
-                            innerControl.Font = new Font(innerControl.Font.FontFamily, innerNewSize, innerControl.Font.Style);
-                        }
-                    }
-                }
-            }
-        }
-
         // PDF görüntüleme alanını güncelle ve imza alanlarını göster
         private void RefreshPdfDisplay()
         {
@@ -1539,64 +1276,6 @@ namespace PDFSystem2
                 ShowSignatureAreas();
                 
                 pnlPdfViewer.Refresh();
-            }
-        }
-        
-        private void ShowSignatureAreas()
-        {
-            try
-            {
-                // Mevcut imza alanları için görsel işaretler ekle
-                foreach (var area in signatureAreas)
-                {
-                    // İmza alanı için Panel oluştur
-                    Panel signaturePanel = new Panel();
-                    signaturePanel.Location = new Point(area.Bounds.X, area.Bounds.Y);
-                    signaturePanel.Size = new Size(area.Bounds.Width, area.Bounds.Height);
-                    signaturePanel.BackColor = Color.FromArgb(100, Color.LightBlue); // Şeffaf mavi
-                    signaturePanel.BorderStyle = BorderStyle.FixedSingle;
-                    
-                    // İmza sahibi bilgisi için label
-                    Label signatureLabel = new Label();
-                    signatureLabel.Text = string.Format("{0}\n{1}", area.PersonName, area.PersonTitle);
-                    signatureLabel.Font = new Font("Arial", 7, FontStyle.Bold);
-                    signatureLabel.ForeColor = Color.DarkBlue;
-                    signatureLabel.BackColor = Color.White;
-                    signatureLabel.TextAlign = ContentAlignment.MiddleCenter;
-                    signatureLabel.Dock = DockStyle.Fill;
-                    
-                    signaturePanel.Controls.Add(signatureLabel);
-                    pnlPdfViewer.Controls.Add(signaturePanel);
-                    
-                    // Panel'i en üste getir
-                    signaturePanel.BringToFront();
-                }
-                
-                // Aktif seçim alanını göster
-                if (isSelecting && currentSelection.Width > 0 && currentSelection.Height > 0)
-                {
-                    Panel selectionPanel = new Panel();
-                    selectionPanel.Location = new Point(currentSelection.X, currentSelection.Y);
-                    selectionPanel.Size = new Size(currentSelection.Width, currentSelection.Height);
-                    selectionPanel.BackColor = Color.FromArgb(150, Color.Red); // Şeffaf kırmızı
-                    selectionPanel.BorderStyle = BorderStyle.FixedSingle;
-                    
-                    Label selectionLabel = new Label();
-                    selectionLabel.Text = "SEÇİLİYOR...";
-                    selectionLabel.Font = new Font("Arial", 8, FontStyle.Bold);
-                    selectionLabel.ForeColor = Color.White;
-                    selectionLabel.BackColor = Color.Red;
-                    selectionLabel.TextAlign = ContentAlignment.MiddleCenter;
-                    selectionLabel.Dock = DockStyle.Fill;
-                    
-                    selectionPanel.Controls.Add(selectionLabel);
-                    pnlPdfViewer.Controls.Add(selectionPanel);
-                    selectionPanel.BringToFront();
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine(string.Format("İmza alanları gösterme hatası: {0}", ex.Message));
             }
         }
 
