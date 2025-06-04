@@ -7,8 +7,12 @@ using Gizmox.WebGUI.Common;
 using PDFSystem2.DataLayer;
 using System.Linq;
 using System.Collections.Generic;
-using System.Drawing.Imaging;
 using System.IO;
+
+// Gizmox-specific using statements
+using GizmoxPoint = Gizmox.WebGUI.Common.Point;
+using GizmoxRectangle = Gizmox.WebGUI.Common.Rectangle;
+using GizmoxSize = Gizmox.WebGUI.Common.Size;
 
 namespace PDFSystem2
 {
@@ -81,8 +85,8 @@ namespace PDFSystem2
         private string selectedFilePath = "";
         private bool isSignatureSelectionMode = false;
         private float zoomFactor = 1.0f;
-        private Point selectionStart;
-        private Rectangle currentSelection;
+        private GizmoxPoint selectionStart;
+        private GizmoxRectangle currentSelection;
         private bool isSelecting = false;
         private List<SignatureArea> signatureAreas = new List<SignatureArea>();
 
@@ -90,7 +94,7 @@ namespace PDFSystem2
         public class SignatureArea
         {
             public int Id { get; set; }
-            public Rectangle Bounds { get; set; }
+            public GizmoxRectangle Bounds { get; set; }
             public string PersonName { get; set; }
             public string PersonTitle { get; set; }
             public string Authority { get; set; }
@@ -305,64 +309,55 @@ namespace PDFSystem2
             txtPdfDosyaAdi = new TextBox();
             txtPdfDosyaAdi.Location = new Point(95, 25);
             txtPdfDosyaAdi.Size = new Size(150, 20);
-            txtPdfDosyaAdi.Text = "imza_sirkuleri.pdf";
+            txtPdfDosyaAdi.Text = ""; // Boş başlat
+            txtPdfDosyaAdi.ReadOnly = true; // Sadece file dialog'dan gelecek
             
-            // Örnek dosyalar dropdown
-            Label lblOrnekDosyalar = new Label();
-            lblOrnekDosyalar.Text = "veya seçin:";
-            lblOrnekDosyalar.Location = new Point(255, 25);
-            lblOrnekDosyalar.Size = new Size(60, 20);
-            
-            cmbOrrnekDosyalar = new ComboBox();
-            cmbOrrnekDosyalar.Location = new Point(320, 25);
-            cmbOrrnekDosyalar.Size = new Size(120, 20);
-            cmbOrrnekDosyalar.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbOrrnekDosyalar.Items.AddRange(new string[]
-            {
-                "-- Seçin --",
-                "imza_sirkuleri.pdf", 
-                "yetki_belgesi.pdf",
-                "banka_sirkuleri.pdf",
-                "noter_belgesi.pdf"
-            });
-            cmbOrrnekDosyalar.SelectedIndex = 0;
+            // Örnek dosyalar dropdown - Şimdilik kaldırıldı (web ortamında gerçek dosya seçimi)
+            Label lblFileUpload = new Label();
+            lblFileUpload.Text = "Gerçek PDF dosyası yükleyin:";
+            lblFileUpload.Location = new Point(255, 25);
+            lblFileUpload.Size = new Size(140, 20);
             
             btnPdfYukle = new Button();
-            btnPdfYukle.Text = "PDF Yükle";
-            btnPdfYukle.Location = new Point(450, 25);
-            btnPdfYukle.Size = new Size(80, 25);
+            btnPdfYukle.Text = "PDF Dosyası Seç";
+            btnPdfYukle.Location = new Point(400, 25);
+            btnPdfYukle.Size = new Size(120, 25);
             btnPdfYukle.BackColor = Color.LightBlue;
             
-            // Zoom kontrolleri
+            // Zoom kontrolleri - Başlangıçta devre dışı
             btnZoomIn = new Button();
             btnZoomIn.Text = "Yakınlaştır";
             btnZoomIn.Location = new Point(540, 25);
             btnZoomIn.Size = new Size(80, 25);
+            btnZoomIn.Enabled = false; // PDF yüklenene kadar devre dışı
             
             btnZoomOut = new Button();
             btnZoomOut.Text = "Uzaklaştır";
             btnZoomOut.Location = new Point(625, 25);
             btnZoomOut.Size = new Size(80, 25);
+            btnZoomOut.Enabled = false; // PDF yüklenene kadar devre dışı
             
             btnFitToWidth = new Button();
             btnFitToWidth.Text = "Genişliğe Sığdır";
             btnFitToWidth.Location = new Point(710, 25);
             btnFitToWidth.Size = new Size(100, 25);
+            btnFitToWidth.Enabled = false; // PDF yüklenene kadar devre dışı
             
             lblZoomLevel = new Label();
             lblZoomLevel.Text = "Zoom: 100%";
             lblZoomLevel.Location = new Point(820, 30);
             lblZoomLevel.Size = new Size(80, 20);
             
-            // İmza seçim modu
+            // İmza seçim modu - Başlangıçta devre dışı
             btnImzaSecimModu = new Button();
             btnImzaSecimModu.Text = "İmza Seçim Modu";
             btnImzaSecimModu.Location = new Point(450, 55);
             btnImzaSecimModu.Size = new Size(120, 25);
-            btnImzaSecimModu.BackColor = Color.LightGreen;
+            btnImzaSecimModu.BackColor = Color.LightGray;
+            btnImzaSecimModu.Enabled = false; // PDF yüklenene kadar devre dışı
             
             lblPdfDurum = new Label();
-            lblPdfDurum.Text = "PDF dosyası henüz seçilmedi. Yukarıdan dosya adı girin veya örnek seçin.";
+            lblPdfDurum.Text = "PDF dosyası henüz yüklenmedi. 'PDF Dosyası Seç' butonuna tıklayarak dosya yükleyin.";
             lblPdfDurum.Location = new Point(10, 85);
             lblPdfDurum.Size = new Size(920, 25);
             lblPdfDurum.ForeColor = Color.Blue;
@@ -370,7 +365,7 @@ namespace PDFSystem2
             
             grpPdfUpload.Controls.AddRange(new Control[]
             {
-                lblDosyaAdi, txtPdfDosyaAdi, lblOrnekDosyalar, cmbOrrnekDosyalar, btnPdfYukle,
+                lblDosyaAdi, txtPdfDosyaAdi, lblFileUpload, btnPdfYukle,
                 btnZoomIn, btnZoomOut, btnFitToWidth, lblZoomLevel, btnImzaSecimModu, lblPdfDurum
             });
         }
@@ -390,7 +385,10 @@ namespace PDFSystem2
             pnlPdfViewer.Location = new Point(0, 0);
             pnlPdfViewer.Size = new Size(800, 600); // Başlangıç boyutu
             pnlPdfViewer.BackColor = Color.White;
-            pnlPdfViewer.Paint += PnlPdfViewer_Paint;
+            
+            // Gizmox için Paint eventi yerine basit text rendering kullanacağız
+            // pnlPdfViewer.Paint += PnlPdfViewer_Paint; // Gizmox'ta Paint eventi farklı çalışır
+            
             pnlPdfViewer.MouseDown += PnlPdfViewer_MouseDown;
             pnlPdfViewer.MouseMove += PnlPdfViewer_MouseMove;
             pnlPdfViewer.MouseUp += PnlPdfViewer_MouseUp;
@@ -456,7 +454,6 @@ namespace PDFSystem2
         {
             // PDF kontrolleri
             btnPdfYukle.Click += BtnPdfYukle_Click;
-            cmbOrrnekDosyalar.SelectedIndexChanged += CmbOrrnekDosyalar_SelectedIndexChanged;
             
             // Zoom kontrolleri
             btnZoomIn.Click += BtnZoomIn_Click;
@@ -477,48 +474,21 @@ namespace PDFSystem2
 
         #region Event Handlers
 
-        private void CmbOrrnekDosyalar_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (cmbOrrnekDosyalar.SelectedIndex > 0)
-            {
-                txtPdfDosyaAdi.Text = cmbOrrnekDosyalar.SelectedItem.ToString();
-            }
-        }
-
         private void BtnPdfYukle_Click(object sender, EventArgs e)
         {
             try
             {
-                string dosyaAdi = txtPdfDosyaAdi.Text.Trim();
+                // Gizmox Web uygulaması için OpenFileDialog kullan
+                OpenFileDialog openFileDialog = new OpenFileDialog();
+                openFileDialog.Filter = "PDF Dosyaları|*.pdf|Tüm Dosyalar|*.*";
+                openFileDialog.Title = "PDF Dosyası Seçin";
+                openFileDialog.Multiselect = false;
                 
-                if (string.IsNullOrEmpty(dosyaAdi))
-                {
-                    MessageBox.Show("Lütfen bir PDF dosya adı girin veya yukarıdaki listeden seçin.", 
-                        "Dosya Adı Gerekli", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                // Web ortamında asenkron çalışır - Closed eventi ile sonucu yakala
+                openFileDialog.Closed += OpenFileDialog_Closed;
                 
-                if (!dosyaAdi.ToLower().EndsWith(".pdf"))
-                {
-                    MessageBox.Show("Dosya adı .pdf uzantısı ile bitmelidir.", 
-                        "Geçersiz Dosya Türü", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-                
-                // PDF yükleme simülasyonu
-                selectedFilePath = "C:\\temp\\" + dosyaAdi;
-                currentPdfFileName = dosyaAdi;
-                
-                // UI güncellemeleri
-                lblPdfDurum.Text = $"✓ PDF YÜKLENDİ: {dosyaAdi} - İmza alanı seçmek için 'İmza Seçim Modu' butonuna tıklayın";
-                lblPdfDurum.ForeColor = Color.Green;
-                lblPdfDurum.BackColor = Color.LightYellow;
-                
-                // PDF görüntüleme alanını güncelle
-                UpdatePdfViewer();
-                
-                MessageBox.Show($"✓ PDF BAŞARIYLA YÜKLENDİ!\n\nDosya: {dosyaAdi}\n\nİmza alanlarını seçmek için:\n1. 'İmza Seçim Modu' butonuna tıklayın\n2. PDF üzerinde fare ile alan seçin\n3. Seçilen alan otomatik olarak yetkili bilgilerine eklenecek", 
-                    "PDF Yükleme Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                // Dialog'u göster
+                openFileDialog.ShowDialog();
             }
             catch (Exception ex)
             {
@@ -526,6 +496,128 @@ namespace PDFSystem2
                 lblPdfDurum.ForeColor = Color.Red;
                 MessageBox.Show("PDF yükleme hatası: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void OpenFileDialog_Closed(object sender, EventArgs e)
+        {
+            try
+            {
+                OpenFileDialog dialog = sender as OpenFileDialog;
+                
+                if (dialog.DialogResult == DialogResult.OK && dialog.SelectedFiles.Length > 0)
+                {
+                    // Seçilen dosya bilgileri
+                    var selectedFile = dialog.SelectedFiles[0];
+                    string fileName = selectedFile.Name;
+                    long fileSize = selectedFile.ContentLength;
+                    
+                    // PDF dosyası kontrolü
+                    if (!fileName.ToLower().EndsWith(".pdf"))
+                    {
+                        MessageBox.Show("Lütfen sadece PDF dosyası seçin.", 
+                            "Geçersiz Dosya Türü", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    
+                    // Dosya boyutu kontrolü (Max 10MB)
+                    if (fileSize > 10 * 1024 * 1024)
+                    {
+                        MessageBox.Show("PDF dosyası 10MB'den büyük olamaz.", 
+                            "Dosya Çok Büyük", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    
+                    // PDF dosyasını işle
+                    ProcessUploadedPdf(selectedFile, fileName, fileSize);
+                }
+                else
+                {
+                    // Kullanıcı iptal etti
+                    lblPdfDurum.Text = "PDF dosyası seçilmedi.";
+                    lblPdfDurum.ForeColor = Color.Gray;
+                }
+            }
+            catch (Exception ex)
+            {
+                lblPdfDurum.Text = "HATA: " + ex.Message;
+                lblPdfDurum.ForeColor = Color.Red;
+                MessageBox.Show("PDF yükleme hatası: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void ProcessUploadedPdf(IFileInfo fileInfo, string fileName, long fileSize)
+        {
+            try
+            {
+                // Dosya bilgilerini kaydet
+                currentPdfFileName = fileName;
+                selectedFilePath = fileInfo.FullName; // Web ortamında geçici yol
+                
+                // UI güncellemeleri
+                lblPdfDurum.Text = string.Format("✓ PDF YÜKLENDİ: {0} ({1}) - İmza alanı seçmek için 'İmza Seçim Modu' butonuna tıklayın", fileName, FormatFileSize(fileSize));
+                lblPdfDurum.ForeColor = Color.Green;
+                lblPdfDurum.BackColor = Color.LightYellow;
+                
+                // PDF dosya adını textbox'a yazdır
+                txtPdfDosyaAdi.Text = fileName;
+                
+                // PDF görüntüleme alanını güncelle
+                UpdatePdfViewer();
+                
+                // Zoom kontrollerini aktif et
+                btnZoomIn.Enabled = true;
+                btnZoomOut.Enabled = true;
+                btnFitToWidth.Enabled = true;
+                btnImzaSecimModu.Enabled = true;
+                btnImzaSecimModu.BackColor = Color.LightGreen;
+                
+                // Başarı mesajı
+                MessageBox.Show(string.Format("✓ PDF BAŞARIYLA YÜKLENDİ!\n\nDosya: {0}\nBoyut: {1}\n\nİmza alanlarını seçmek için:\n1. 'İmza Seçim Modu' butonuna tıklayın\n2. PDF üzerinde fare ile alan seçin\n3. Seçilen alan otomatik olarak yetkili bilgilerine eklenecek", fileName, FormatFileSize(fileSize)), 
+                    "PDF Yükleme Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    
+                // PDF içeriğini okuma işlemi (opsiyonel - gelecekte PDF rendering için)
+                ReadPdfContentAsync(fileInfo);
+            }
+            catch (Exception ex)
+            {
+                lblPdfDurum.Text = "PDF işleme hatası: " + ex.Message;
+                lblPdfDurum.ForeColor = Color.Red;
+                MessageBox.Show("PDF işleme hatası: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void ReadPdfContentAsync(IFileInfo fileInfo)
+        {
+            try
+            {
+                // Gizmox web ortamında dosya içeriğini okuma
+                // Bu kısım gelecekte gerçek PDF rendering kütüphanesi ile entegre edilebilir
+                
+                // Şimdilik dosya bilgilerini log'la
+                System.Diagnostics.Debug.WriteLine(string.Format("PDF Yüklendi: {0}, Boyut: {1} bytes", fileInfo.Name, fileInfo.ContentLength));
+                
+                // PDF metadata'sı okuma (gelecek geliştirme)
+                // using (var stream = fileInfo.OpenRead())
+                // {
+                //     // PDF parsing işlemleri
+                // }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(string.Format("PDF okuma hatası: {0}", ex.Message));
+            }
+        }
+
+        private string FormatFileSize(long bytes)
+        {
+            if (bytes < 1024)
+                return string.Format("{0} bytes", bytes);
+            else if (bytes < 1024 * 1024)
+                return string.Format("{0:F1} KB", bytes / 1024);
+            else if (bytes < 1024 * 1024 * 1024)
+                return string.Format("{0:F1} MB", bytes / (1024 * 1024));
+            else
+                return string.Format("{0:F1} GB", bytes / (1024 * 1024 * 1024));
         }
 
         private void BtnZoomIn_Click(object sender, EventArgs e)
@@ -582,14 +674,14 @@ namespace PDFSystem2
                 btnImzaSecimModu.Text = "İmza Seçim Modu";
                 btnImzaSecimModu.BackColor = Color.LightGreen;
                 pnlPdfViewer.Cursor = Cursors.Default;
-                lblPdfDurum.Text = $"PDF: {currentPdfFileName} - İmza Seçim Modu Kapalı";
+                lblPdfDurum.Text = string.Format("PDF: {0} - İmza Seçim Modu Kapalı", currentPdfFileName);
                 lblPdfDurum.ForeColor = Color.Green;
             }
         }
 
         private void UpdateZoomLabel()
         {
-            lblZoomLevel.Text = $"Zoom: {(zoomFactor * 100):F0}%";
+            lblZoomLevel.Text = string.Format("Zoom: {0:F0}%", zoomFactor * 100);
         }
 
         private void UpdatePdfViewer()
@@ -601,7 +693,9 @@ namespace PDFSystem2
             int newHeight = (int)(600 * zoomFactor);
             
             pnlPdfViewer.Size = new Size(newWidth, newHeight);
-            pnlPdfViewer.Invalidate(); // Yeniden çizim için
+            
+            // Gizmox uyumlu görsel güncelleme
+            RefreshPdfViewer();
         }
 
         private void BtnKaydet_Click(object sender, EventArgs e)
@@ -611,7 +705,7 @@ namespace PDFSystem2
                 // İmza alanlarını kaydet
                 if (signatureAreas.Count > 0)
                 {
-                    MessageBox.Show($"Kaydet işlemi başarılı!\n\n{signatureAreas.Count} adet imza alanı kaydedildi.\nPDF: {currentPdfFileName}", 
+                    MessageBox.Show(string.Format("Kaydet işlemi başarılı!\n\n{0} adet imza alanı kaydedildi.\nPDF: {1}", signatureAreas.Count, currentPdfFileName), 
                         "Kayıt Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
@@ -653,7 +747,7 @@ namespace PDFSystem2
                         {
                             signatureAreas.Remove(areaToRemove);
                             RefreshSignatureGrid();
-                            pnlPdfViewer.Invalidate(); // PDF görünümünü güncelle
+                            RefreshPdfViewer(); // PDF görünümünü güncelle
                             
                             MessageBox.Show("İmza alanı başarıyla silindi.", "Bilgi", 
                                 MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -682,7 +776,7 @@ namespace PDFSystem2
         {
             if (!isSignatureSelectionMode) return;
             
-            selectionStart = e.Location;
+            selectionStart = new GizmoxPoint(e.X, e.Y);
             isSelecting = true;
         }
 
@@ -690,8 +784,14 @@ namespace PDFSystem2
         {
             if (!isSelecting) return;
             
-            currentSelection = new Rectangle(selectionStart, e.Location - selectionStart);
-            pnlPdfViewer.Invalidate();
+            // Gizmox için basit rectangle hesaplama
+            int x = Math.Min(selectionStart.X, e.X);
+            int y = Math.Min(selectionStart.Y, e.Y);
+            int width = Math.Abs(e.X - selectionStart.X);
+            int height = Math.Abs(e.Y - selectionStart.Y);
+            
+            currentSelection = new GizmoxRectangle(x, y, width, height);
+            RefreshPdfViewer();
         }
 
         private void PnlPdfViewer_MouseUp(object sender, MouseEventArgs e)
@@ -705,8 +805,8 @@ namespace PDFSystem2
             {
                 MessageBox.Show("İmza alanı çok küçük. Lütfen daha büyük bir alan seçin.", 
                     "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                currentSelection = Rectangle.Empty;
-                pnlPdfViewer.Invalidate();
+                currentSelection = GizmoxRectangle.Empty;
+                RefreshPdfViewer();
                 return;
             }
             
@@ -715,8 +815,8 @@ namespace PDFSystem2
             
             if (string.IsNullOrEmpty(personName))
             {
-                currentSelection = Rectangle.Empty;
-                pnlPdfViewer.Invalidate();
+                currentSelection = GizmoxRectangle.Empty;
+                RefreshPdfViewer();
                 return;
             }
             
@@ -740,13 +840,14 @@ namespace PDFSystem2
             // DataGridView'e ekle
             RefreshSignatureGrid();
             
-            lblPdfDurum.Text = $"✓ İMZA ALANI EKLENDİ: {personName} - {personTitle}";
+            lblPdfDurum.Text = string.Format("✓ İMZA ALANI EKLENDİ: {0} - {1}", personName, personTitle);
             lblPdfDurum.ForeColor = Color.DarkGreen;
             
-            currentSelection = Rectangle.Empty;
-            pnlPdfViewer.Invalidate();
+            currentSelection = GizmoxRectangle.Empty;
+            RefreshPdfViewer();
             
-            MessageBox.Show($"İmza alanı başarıyla eklendi!\n\nKişi: {personName}\nÜnvan: {personTitle}\nYetki: {authority}\nKoordinat: X={newSignatureArea.Bounds.X}, Y={newSignatureArea.Bounds.Y}\nBoyut: {newSignatureArea.Bounds.Width}x{newSignatureArea.Bounds.Height}", 
+            MessageBox.Show(string.Format("İmza alanı başarıyla eklendi!\n\nKişi: {0}\nÜnvan: {1}\nYetki: {2}\nKoordinat: X={3}, Y={4}\nBoyut: {5}x{6}", 
+                personName, personTitle, authority, newSignatureArea.Bounds.X, newSignatureArea.Bounds.Y, newSignatureArea.Bounds.Width, newSignatureArea.Bounds.Height), 
                 "İmza Alanı Eklendi", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
@@ -874,7 +975,6 @@ namespace PDFSystem2
             
             // PDF alanlarını temizle
             txtPdfDosyaAdi.Text = "";
-            cmbOrrnekDosyalar.SelectedIndex = 0;
             currentPdfFileName = "";
             selectedFilePath = "";
             
@@ -885,15 +985,147 @@ namespace PDFSystem2
             // PDF viewer'ı temizle
             isSignatureSelectionMode = false;
             zoomFactor = 1.0f;
-            btnImzaSecimModu.Text = "İmza Seçim Modu";
-            btnImzaSecimModu.BackColor = Color.LightGreen;
             
-            lblPdfDurum.Text = "PDF dosyası henüz seçilmedi. Yukarıdan dosya adı girin veya örnek seçin.";
+            // Buton durumlarını sıfırla
+            btnImzaSecimModu.Text = "İmza Seçim Modu";
+            btnImzaSecimModu.BackColor = Color.LightGray;
+            btnImzaSecimModu.Enabled = false;
+            
+            btnZoomIn.Enabled = false;
+            btnZoomOut.Enabled = false;
+            btnFitToWidth.Enabled = false;
+            
+            lblPdfDurum.Text = "PDF dosyası henüz yüklenmedi. 'PDF Dosyası Seç' butonuna tıklayarak dosya yükleyin.";
             lblPdfDurum.ForeColor = Color.Blue;
             lblPdfDurum.BackColor = SystemColors.Control;
             
             UpdateZoomLabel();
-            pnlPdfViewer.Invalidate();
+            RefreshPdfViewer();
+        }
+
+        #endregion
+
+        #region PDF ve İmza İşleme Metodları
+
+        private void RefreshSignatureGrid()
+        {
+            try
+            {
+                // Grid kolonlarını ayarla
+                SetupSignatureGridColumns();
+                
+                // Mevcut satırları temizle
+                dgvYetkililer.Rows.Clear();
+                
+                // İmza alanlarını grid'e ekle
+                foreach (var area in signatureAreas)
+                {
+                    var rowIndex = dgvYetkililer.Rows.Add(
+                        area.Id,
+                        area.PersonName,
+                        area.PersonTitle,
+                        area.Authority,
+                        string.Format("X:{0}, Y:{1}", area.Bounds.X, area.Bounds.Y),
+                        string.Format("{0}x{1}", area.Bounds.Width, area.Bounds.Height),
+                        area.CreatedDate.ToString("dd.MM.yyyy HH:mm"),
+                        area.SignatureImage != null ? "✓ Var" : "✗ Yok"
+                    );
+                }
+                
+                // Grid görünümünü güncelle
+                dgvYetkililer.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
+                dgvYetkililer.Refresh();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(string.Format("Grid güncelleme hatası: {0}", ex.Message), 
+                    "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void SetupSignatureGridColumns()
+        {
+            if (dgvYetkililer.Columns.Count == 0)
+            {
+                // Grid kolonlarını oluştur
+                dgvYetkililer.Columns.Clear();
+                dgvYetkililer.Columns.Add("ID", "ID");
+                dgvYetkililer.Columns.Add("PersonName", "KİŞİ ADI");
+                dgvYetkililer.Columns.Add("PersonTitle", "ÜNVAN");
+                dgvYetkililer.Columns.Add("Authority", "YETKİ SEVİYESİ");
+                dgvYetkililer.Columns.Add("Coordinates", "KOORDİNAT");
+                dgvYetkililer.Columns.Add("Size", "BOYUT");
+                dgvYetkililer.Columns.Add("CreatedDate", "OLUŞTURMA TARİHİ");
+                dgvYetkililer.Columns.Add("SignaturePreview", "İMZA ÖNİZLEME");
+                
+                // Kolon genişlikleri
+                dgvYetkililer.Columns["ID"].Visible = false;
+                dgvYetkililer.Columns["PersonName"].Width = 150;
+                dgvYetkililer.Columns["PersonTitle"].Width = 120;
+                dgvYetkililer.Columns["Authority"].Width = 100;
+                dgvYetkililer.Columns["Coordinates"].Width = 120;
+                dgvYetkililer.Columns["Size"].Width = 80;
+                dgvYetkililer.Columns["CreatedDate"].Width = 130;
+                dgvYetkililer.Columns["SignaturePreview"].Width = 100;
+            }
+        }
+
+        private string CreateSignatureImage(GizmoxRectangle bounds)
+        {
+            try
+            {
+                // Gizmox için basit Base64 string döndürüyoruz
+                // Gerçek bitmap oluşturma Gizmox'ta desteklenmediği için placeholder döndürüyoruz
+                string placeholder = string.Format("IMZA_{0}x{1}_{2}", bounds.Width, bounds.Height, DateTime.Now.Ticks);
+                return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(placeholder));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(string.Format("İmza resmi oluşturma hatası: {0}", ex.Message));
+                return null;
+            }
+        }
+
+        // PDF görsel rendering için Gizmox uyumlu basit metod
+        private void UpdatePdfDisplay()
+        {
+            if (string.IsNullOrEmpty(currentPdfFileName)) return;
+            
+            try
+            {
+                // PDF içeriği için basit metin gösterimi
+                pnlPdfViewer.BackColor = Color.White;
+                
+                // Panel üzerine basit text bilgi ekleyebiliriz
+                pnlPdfViewer.Text = string.Format("PDF: {0}\nİmza alanı seçmek için fare ile sürükleyin.", currentPdfFileName);
+                
+                // PDF boyutunu zoom faktörüne göre ayarla
+                int newWidth = (int)(800 * zoomFactor);
+                int newHeight = (int)(600 * zoomFactor);
+                
+                pnlPdfViewer.Size = new Size(newWidth, newHeight);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(string.Format("PDF görüntüleme hatası: {0}", ex.Message));
+            }
+        }
+
+        // Gizmox için basitleştirilmiş Paint eventi yerine kullanılacak
+        private void RefreshPdfViewer()
+        {
+            if (pnlPdfViewer != null)
+            {
+                UpdatePdfDisplay();
+                pnlPdfViewer.Refresh();
+                
+                // İmza alanları için görsel ipuçları (basit text olarak)
+                if (signatureAreas.Count > 0)
+                {
+                    string areasInfo = string.Format("\n\n{0} adet imza alanı seçildi.", signatureAreas.Count);
+                    pnlPdfViewer.Text += areasInfo;
+                }
+            }
         }
 
         #endregion
@@ -903,5 +1135,4 @@ namespace PDFSystem2
             // Gizmox gateway component interface implementation
         }
     }
-} 
 } 
