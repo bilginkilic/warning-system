@@ -4,15 +4,11 @@ using System.Drawing;
 using System.Windows.Forms;
 using Gizmox.WebGUI.Forms;
 using Gizmox.WebGUI.Common;
+using Gizmox.WebGUI.Common.Interfaces;
 using PDFSystem2.DataLayer;
 using System.Linq;
 using System.Collections.Generic;
 using System.IO;
-
-// Gizmox-specific using statements
-using GizmoxPoint = Gizmox.WebGUI.Common.Point;
-using GizmoxRectangle = Gizmox.WebGUI.Common.Rectangle;
-using GizmoxSize = Gizmox.WebGUI.Common.Size;
 
 namespace PDFSystem2
 {
@@ -85,8 +81,8 @@ namespace PDFSystem2
         private string selectedFilePath = "";
         private bool isSignatureSelectionMode = false;
         private float zoomFactor = 1.0f;
-        private GizmoxPoint selectionStart;
-        private GizmoxRectangle currentSelection;
+        private Point selectionStart;
+        private Rectangle currentSelection;
         private bool isSelecting = false;
         private List<SignatureArea> signatureAreas = new List<SignatureArea>();
 
@@ -94,7 +90,7 @@ namespace PDFSystem2
         public class SignatureArea
         {
             public int Id { get; set; }
-            public GizmoxRectangle Bounds { get; set; }
+            public Rectangle Bounds { get; set; }
             public string PersonName { get; set; }
             public string PersonTitle { get; set; }
             public string Authority { get; set; }
@@ -504,12 +500,12 @@ namespace PDFSystem2
             {
                 OpenFileDialog dialog = sender as OpenFileDialog;
                 
-                if (dialog.DialogResult == DialogResult.OK && dialog.SelectedFiles.Length > 0)
+                if (dialog.DialogResult == DialogResult.OK && dialog.SelectedFiles != null && dialog.SelectedFiles.Length > 0)
                 {
                     // Seçilen dosya bilgileri
                     var selectedFile = dialog.SelectedFiles[0];
                     string fileName = selectedFile.Name;
-                    long fileSize = selectedFile.ContentLength;
+                    long fileSize = selectedFile.Size;
                     
                     // PDF dosyası kontrolü
                     if (!fileName.ToLower().EndsWith(".pdf"))
@@ -545,13 +541,13 @@ namespace PDFSystem2
             }
         }
 
-        private void ProcessUploadedPdf(IFileInfo fileInfo, string fileName, long fileSize)
+        private void ProcessUploadedPdf(IVirtualFile fileInfo, string fileName, long fileSize)
         {
             try
             {
                 // Dosya bilgilerini kaydet
                 currentPdfFileName = fileName;
-                selectedFilePath = fileInfo.FullName; // Web ortamında geçici yol
+                selectedFilePath = fileInfo.Name; // Web ortamında dosya adı
                 
                 // UI güncellemeleri
                 lblPdfDurum.Text = string.Format("✓ PDF YÜKLENDİ: {0} ({1}) - İmza alanı seçmek için 'İmza Seçim Modu' butonuna tıklayın", fileName, FormatFileSize(fileSize));
@@ -586,7 +582,7 @@ namespace PDFSystem2
             }
         }
 
-        private async void ReadPdfContentAsync(IFileInfo fileInfo)
+        private async void ReadPdfContentAsync(IVirtualFile fileInfo)
         {
             try
             {
@@ -594,10 +590,10 @@ namespace PDFSystem2
                 // Bu kısım gelecekte gerçek PDF rendering kütüphanesi ile entegre edilebilir
                 
                 // Şimdilik dosya bilgilerini log'la
-                System.Diagnostics.Debug.WriteLine(string.Format("PDF Yüklendi: {0}, Boyut: {1} bytes", fileInfo.Name, fileInfo.ContentLength));
+                System.Diagnostics.Debug.WriteLine(string.Format("PDF Yüklendi: {0}, Boyut: {1} bytes", fileInfo.Name, fileInfo.Size));
                 
                 // PDF metadata'sı okuma (gelecek geliştirme)
-                // using (var stream = fileInfo.OpenRead())
+                // using (var stream = fileInfo.GetStream())
                 // {
                 //     // PDF parsing işlemleri
                 // }
@@ -776,7 +772,7 @@ namespace PDFSystem2
         {
             if (!isSignatureSelectionMode) return;
             
-            selectionStart = new GizmoxPoint(e.X, e.Y);
+            selectionStart = new Point(e.X, e.Y);
             isSelecting = true;
         }
 
@@ -790,7 +786,7 @@ namespace PDFSystem2
             int width = Math.Abs(e.X - selectionStart.X);
             int height = Math.Abs(e.Y - selectionStart.Y);
             
-            currentSelection = new GizmoxRectangle(x, y, width, height);
+            currentSelection = new Rectangle(x, y, width, height);
             RefreshPdfViewer();
         }
 
@@ -805,7 +801,7 @@ namespace PDFSystem2
             {
                 MessageBox.Show("İmza alanı çok küçük. Lütfen daha büyük bir alan seçin.", 
                     "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                currentSelection = GizmoxRectangle.Empty;
+                currentSelection = Rectangle.Empty;
                 RefreshPdfViewer();
                 return;
             }
@@ -815,7 +811,7 @@ namespace PDFSystem2
             
             if (string.IsNullOrEmpty(personName))
             {
-                currentSelection = GizmoxRectangle.Empty;
+                currentSelection = Rectangle.Empty;
                 RefreshPdfViewer();
                 return;
             }
@@ -843,7 +839,7 @@ namespace PDFSystem2
             lblPdfDurum.Text = string.Format("✓ İMZA ALANI EKLENDİ: {0} - {1}", personName, personTitle);
             lblPdfDurum.ForeColor = Color.DarkGreen;
             
-            currentSelection = GizmoxRectangle.Empty;
+            currentSelection = Rectangle.Empty;
             RefreshPdfViewer();
             
             MessageBox.Show(string.Format("İmza alanı başarıyla eklendi!\n\nKişi: {0}\nÜnvan: {1}\nYetki: {2}\nKoordinat: X={3}, Y={4}\nBoyut: {5}x{6}", 
@@ -1070,7 +1066,7 @@ namespace PDFSystem2
             }
         }
 
-        private string CreateSignatureImage(GizmoxRectangle bounds)
+        private string CreateSignatureImage(Rectangle bounds)
         {
             try
             {
