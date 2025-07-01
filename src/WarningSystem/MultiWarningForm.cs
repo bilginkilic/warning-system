@@ -22,7 +22,7 @@ namespace WarningSystem
         private Button btnCancel;
         private WarningMode _mode;
         private const int PADDING = 15;
-        private const int WARNING_HEIGHT = 80;
+        private const int MIN_WARNING_HEIGHT = 80;
         private const int BUTTON_HEIGHT = 40;
         private const int BUTTON_WIDTH = 120;
 
@@ -39,12 +39,12 @@ namespace WarningSystem
 
         private void InitializeComponents()
         {
-            this.Text = "Sistem Uyarıları";
+            this.Text = "System Warnings";
             this.StartPosition = FormStartPosition.CenterScreen;
             this.MinimumSize = new Size(800, 600);
             this.Size = new Size(800, 600);
 
-            // Ana panel
+            // Main panel
             warningsPanel = new Panel
             {
                 Dock = DockStyle.Top,
@@ -54,7 +54,7 @@ namespace WarningSystem
             };
             this.Controls.Add(warningsPanel);
 
-            // Butonlar için alt panel
+            // Bottom panel for buttons
             var buttonPanel = new Panel
             {
                 Dock = DockStyle.Bottom,
@@ -65,10 +65,10 @@ namespace WarningSystem
 
             if (_mode == WarningMode.Simulation)
             {
-                // Tek buton - ortada
+                // Single button - centered
                 btnOk = new Button
                 {
-                    Text = "Tamam",
+                    Text = "OK",
                     Size = new Size(BUTTON_WIDTH, BUTTON_HEIGHT),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(0, 120, 215),
@@ -97,13 +97,13 @@ namespace WarningSystem
             }
             else
             {
-                // İki buton - ortada yan yana
+                // Two buttons - centered side by side
                 var totalWidth = (2 * BUTTON_WIDTH) + PADDING;
                 var startX = (buttonPanel.ClientSize.Width - totalWidth) / 2;
 
                 btnContinue = new Button
                 {
-                    Text = "Devam Et",
+                    Text = "Continue",
                     Size = new Size(BUTTON_WIDTH, BUTTON_HEIGHT),
                     Location = new Point(startX, (buttonPanel.ClientSize.Height - BUTTON_HEIGHT) / 2),
                     FlatStyle = FlatStyle.Flat,
@@ -116,7 +116,7 @@ namespace WarningSystem
 
                 btnCancel = new Button
                 {
-                    Text = "İptal",
+                    Text = "Cancel",
                     Size = new Size(BUTTON_WIDTH, BUTTON_HEIGHT),
                     Location = new Point(startX + BUTTON_WIDTH + PADDING, (buttonPanel.ClientSize.Height - BUTTON_HEIGHT) / 2),
                     FlatStyle = FlatStyle.Flat,
@@ -188,9 +188,12 @@ namespace WarningSystem
 
         private void LoadWarnings()
         {
-            var groupedWarnings = _warnings
+            // Sort warnings: Critical (red) first, then Important (black), then others
+            var sortedWarnings = _warnings.OrderBy(w => GetWarningPriority(w.WarningColor.ToLower())).ToList();
+            
+            var groupedWarnings = sortedWarnings
                 .GroupBy(w => w.WarningColor.ToLower())
-                .OrderBy(g => g.Key);
+                .OrderBy(g => GetWarningPriority(g.Key));
 
             int currentY = 0;
 
@@ -211,18 +214,33 @@ namespace WarningSystem
                 {
                     var warningPanel = CreateWarningPanel(warning, currentY);
                     warningsPanel.Controls.Add(warningPanel);
-                    currentY += WARNING_HEIGHT + 10;
+                    currentY += warningPanel.Height + 10;
                 }
 
                 currentY += 20;
             }
         }
 
+        private int GetWarningPriority(string colorName)
+        {
+            return colorName switch
+            {
+                "red" => 1,      // Critical - highest priority
+                "black" => 2,    // Important - second priority
+                "darkgray" => 3, // Information - third priority
+                _ => 4           // Others - lowest priority
+            };
+        }
+
         private Panel CreateWarningPanel(Warning warning, int yPosition)
         {
+            // Calculate required height based on text content
+            var textSize = CalculateTextSize(warning.WarningText, warningsPanel.Width - 60);
+            var requiredHeight = Math.Max(MIN_WARNING_HEIGHT, textSize.Height + 60);
+
             var panel = new Panel
             {
-                Size = new Size(warningsPanel.Width - 40, WARNING_HEIGHT),
+                Size = new Size(warningsPanel.Width - 40, requiredHeight),
                 Location = new Point(10, yPosition),
                 BackColor = Color.White,
                 BorderStyle = BorderStyle.None
@@ -244,8 +262,10 @@ namespace WarningSystem
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
                 ForeColor = Color.Black,
                 Location = new Point(10, 35),
-                Size = new Size(panel.Width - 20, WARNING_HEIGHT - 45),
-                AutoEllipsis = true
+                Size = new Size(panel.Width - 20, requiredHeight - 45),
+                AutoSize = false,
+                AutoEllipsis = false,
+                UseMnemonic = false
             };
             panel.Controls.Add(textLabel);
 
@@ -260,14 +280,27 @@ namespace WarningSystem
             return panel;
         }
 
+        private Size CalculateTextSize(string text, int maxWidth)
+        {
+            using (var font = new Font("Segoe UI", 9.5f, FontStyle.Regular))
+            using (var g = CreateGraphics())
+            {
+                // Replace \n with actual line breaks
+                text = text.Replace("\\n", Environment.NewLine);
+                
+                var size = g.MeasureString(text, font, maxWidth);
+                return new Size((int)size.Width, (int)size.Height);
+            }
+        }
+
         private string GetColorDisplayName(string colorName)
         {
             return colorName.ToLower() switch
             {
-                "red" => "Kritik Uyarılar",
-                "black" => "Önemli Uyarılar",
-                "darkgray" => "Bilgilendirme",
-                _ => "Diğer Uyarılar"
+                "red" => "Critical Warnings",
+                "black" => "Important Warnings",
+                "darkgray" => "Information",
+                _ => "Other Warnings"
             };
         }
     }
